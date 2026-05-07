@@ -64,21 +64,26 @@ function ToggleRow({ label, options, current, onPick }: RowProps): React.ReactEl
 
 export const LayoutPanel = observer(
   ({ uiStore, selectionStore, styleEdit }: Props) => {
-    const visible =
-      uiStore.visible && uiStore.mode === 'layout' && selectionStore.selected != null;
-    if (!visible) return null;
+    // Hook order MUST stay stable across renders, so call hooks before
+    // any early return. The render body further down handles the
+    // null-target case after the visibility gate.
+    const target = selectionStore.selected;
+    const csGap = target ? window.getComputedStyle(target).gap || '0px' : '0px';
+    const [gapDraft, setGapDraft] = React.useState(csGap);
+    React.useEffect(() => {
+      setGapDraft(csGap);
+    }, [csGap, target]);
 
-    const target = selectionStore.selected!;
+    const visible =
+      uiStore.visible && uiStore.mode === 'layout' && target != null;
+    if (!visible || !target) return null;
+
     const cs = window.getComputedStyle(target);
     const display = cs.display;
     const isFlexLike = display === 'flex' || display === 'inline-flex';
     const isGridLike = display === 'grid' || display === 'inline-grid';
 
     const apply = (prop: string, value: string) => styleEdit.apply(target, prop, value);
-    const [gapDraft, setGapDraft] = React.useState(cs.gap || '0px');
-    React.useEffect(() => {
-      setGapDraft(cs.gap || '0px');
-    }, [cs.gap, target]);
 
     return (
       <aside

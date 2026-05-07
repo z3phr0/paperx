@@ -211,4 +211,92 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
       await ctx.close();
     }
   });
+
+  test('ruler mode renders read-only measurements for the selected element', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-ruler"]').click();
+      await page.locator('[data-uid="hero-title-001"]').click();
+
+      const panel = page.locator('[data-testid="paperx-ruler-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+
+      // Section headers from the read-only readout.
+      await expect(panel.getByText('Bounding box', { exact: true })).toBeVisible();
+      await expect(panel.getByText('Viewport offsets', { exact: true })).toBeVisible();
+
+      // Width row should report a positive non-zero pixel value.
+      const widthRow = panel.getByText('Width', { exact: true }).locator('..');
+      const widthText = (await widthRow.innerText()).trim();
+      const widthMatch = widthText.match(/([\d.]+)\s*px/);
+      expect(widthMatch).not.toBeNull();
+      expect(Number.parseFloat(widthMatch![1]!)).toBeGreaterThan(0);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('comment mode adds a note and lists it under the selected element', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="hero-desc-002"]').click();
+
+      const panel = page.locator('[data-testid="paperx-comment-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+
+      const NOTE = 'needs more contrast';
+      await page.locator('[data-testid="paperx-comment-input"]').fill(NOTE);
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      // Listed comment text must appear, count line should reflect it.
+      await expect(panel.getByText(NOTE, { exact: false })).toBeVisible();
+      await expect(panel.getByText('Comments (1)', { exact: false })).toBeVisible();
+      // Submitting an empty draft was already disabled; submitting clears
+      // the draft. A second submit attempt without re-entering text
+      // should be a no-op (button disabled), so the count stays at 1.
+      await expect(page.locator('[data-testid="paperx-comment-submit"]')).toBeDisabled();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('layout mode toggles display:flex and the change reaches ChangeLog', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-layout"]').click();
+      const target = page.locator('[data-uid="hero-desc-002"]');
+      await target.click();
+
+      const panel = page.locator('[data-testid="paperx-layout-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+
+      // Display row exposes the candidate values as toggle buttons.
+      await panel.getByRole('button', { name: 'flex', exact: true }).click();
+
+      // Inline style on the host-page element should reflect the choice.
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => (el as HTMLElement).style.display),
+          { timeout: 5_000 },
+        )
+        .toBe('flex');
+
+      // ChangeLog drawer should now carry a row for `display`.
+      await page.locator('[data-testid="paperx-history"]').click();
+      const drawer = page.locator('paperx-root [role="row"]');
+      await expect(drawer.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await drawer.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('display'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
 });
