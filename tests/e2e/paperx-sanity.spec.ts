@@ -265,6 +265,27 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
+  test('hover tooltip shows tag + dimensions for the hovered element', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      // Mode-agnostic: don't switch modes, just hover. Picker is active
+      // whenever paperx is visible.
+      const target = page.locator('[data-uid="hero-title-001"]');
+      await target.hover();
+
+      const tip = page.locator('[data-testid="paperx-hover-tooltip"]');
+      await expect(tip).toBeVisible({ timeout: 5_000 });
+      const text = await tip.innerText();
+      expect(text.toLowerCase()).toContain('h1');
+      // Dimensions row uses ' × ' as the separator; assert the literal.
+      expect(text).toMatch(/\d+px\s*×\s*\d+px/);
+    } finally {
+      await ctx.close();
+    }
+  });
+
   test('layout mode toggles display:flex and the change reaches ChangeLog', async () => {
     const ctx = await launchWithExtension();
     try {
