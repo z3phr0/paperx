@@ -4,11 +4,11 @@
  * Layout: [collapse caret] Title + counts + filter-toggle + reset-all
  * + Export-Prompt + (status: copied indicator).
  *
- * `Export Prompt` calls JsonPromptExporter.copyToClipboard (passing the
- * Shadow-DOM portal layer so the textarea fallback stays inside our
- * isolated tree). We surface a transient "Copied" / "Failed" badge for
- * ~1.5s so the user gets feedback even when the toolbar is the only UI
- * surface they're looking at.
+ * `Export Prompt` calls JsonPromptExporter.exportToClipboard which
+ * writes pure paperx-prompt-v1 JSON (no markdown fence, no preamble).
+ * We surface a transient "Copied" / "Failed" badge for ~1.5s so the
+ * user gets feedback even when the toolbar is the only UI surface
+ * they're looking at.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
@@ -16,7 +16,6 @@ import { ChevronDown, ChevronUp, Filter, Trash2, ClipboardCopy, Check, AlertTria
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
-import { usePortalContainer } from '@/shared/ui/portal';
 import type { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import type { IJsonPromptExporter } from '@/shared/services/JsonPromptExporter';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
@@ -35,7 +34,6 @@ const STATUS_RESET_MS = 1500;
 
 export const ChangeLogHeader = observer(
   ({ uiStore, exporter, styleEdit, filtersVisible, onToggleFilters }: ChangeLogHeaderProps) => {
-    const portal = usePortalContainer();
     const [copyStatus, setCopyStatus] = React.useState<CopyStatus>('idle');
 
     React.useEffect(() => {
@@ -50,13 +48,13 @@ export const ChangeLogHeader = observer(
 
     const handleExport = React.useCallback(async () => {
       try {
-        const ok = await exporter.copyToClipboard(undefined, portal);
-        setCopyStatus(ok ? 'ok' : 'fail');
+        const result = await exporter.exportToClipboard();
+        setCopyStatus(result.ok ? 'ok' : 'fail');
       } catch (err) {
         console.warn('[paperx/ChangeLogHeader] export failed', err);
         setCopyStatus('fail');
       }
-    }, [exporter, portal]);
+    }, [exporter]);
 
     const total = uiStore.totalCount;
     const filtered = uiStore.filteredRecords.length;

@@ -126,19 +126,3 @@ export interface PaperxPrompt {
  */
 export type PaperxPromptV1 = PaperxPrompt;
 
-/**
- * Subset of a ChangeRecord that JsonPromptExporter consumes. Kept
- * structurally compatible with `ChangeRecord` from
- * src/shared/services/ChangeLogService.ts so we don't have to import
- * the concrete type (avoiding a service-container import cycle).
- */
-export interface PromptSourceRecord {
-  id: string;
-  ts: number;
-  selector: string;
-  property: string;
-  before: string;
-  after: string;
-  mode: ToolMode;
-  dataUid?: string | null;
-}

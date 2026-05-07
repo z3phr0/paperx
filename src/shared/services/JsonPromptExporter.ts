@@ -21,12 +21,6 @@
  * a synthetic `<textarea>` + `document.execCommand('copy')` for old
  * hosts. Both paths are best-effort; failure surfaces as a
  * structured `ExportResult`, never an exception.
- *
- * Backwards-compatibility shim: the legacy `buildPrompt` /
- * `buildPromptText` / `copyToClipboard` methods are kept as thin
- * forwarders so any downstream test or script that imported them
- * before S2-A landed keeps working. The new S2-A primary surface is
- * `build` / `exportToClipboard`.
  */
 import { inject, injectable } from 'inversify';
 
@@ -42,7 +36,6 @@ import {
   type PaperxPromptChange,
   type PaperxPromptTarget,
   type PaperxPromptV1,
-  type PromptSourceRecord,
 } from '@/shared/types/prompt';
 
 const PAPERX_VERSION = '0.1.0';
@@ -70,23 +63,8 @@ export type ExportResult = ExportOk | ExportErr;
 export interface IJsonPromptExporter {
   /** Build the v1 prompt object from the current ChangeLog state. */
   build(): PaperxPromptV1;
-  /** Build + serialize + copy. User-gesture-safe; never throws. */
+  /** Build + serialize + copy as pure JSON. User-gesture-safe; never throws. */
   exportToClipboard(): Promise<ExportResult>;
-  /** @deprecated kept for compat; alias of `build()`. The optional
-   *  `records` lets old smoke harnesses inject synthetic input. */
-  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPromptV1;
-  /** @deprecated kept for compat; markdown-fenced version of build(). */
-  buildPromptText(records?: readonly PromptSourceRecord[]): string;
-  /**
-   * @deprecated kept for compat; boolean-result variant. The
-   * `fallbackHost` argument is honored by the legacy textarea fallback
-   * (Shadow-DOM portal layer hosts the temp textarea); the modern
-   * `exportToClipboard` path appends to `document.body` instead.
-   */
-  copyToClipboard(
-    records?: readonly PromptSourceRecord[],
-    fallbackHost?: ParentNode,
-  ): Promise<boolean>;
 }
 
 interface PropFold {
@@ -117,80 +95,6 @@ export class JsonPromptExporter implements IJsonPromptExporter {
       this.log.list(),
       (id) => this.log.getTargetById(id),
     );
-  }
-
-  /**
-   * Legacy entry point used by the smoke harness — accepts either a
-   * synthetic record list or a structurally compatible PromptSource
-   * Record list. Element resolution still goes through the live
-   * ChangeLogService so target uids reflect current DOM state.
-   */
-  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPromptV1 {
-    if (!records) return this.build();
-    return this.buildFrom(
-      records as readonly ChangeRecord[],
-      (id) => this.log.getTargetById(id),
-    );
-  }
-
-  buildPromptText(records?: readonly PromptSourceRecord[]): string {
-    const prompt = records ? this.buildPrompt(records) : this.build();
-    const preamble = [
-      `# paperx prompt (${prompt.schema})`,
-      `# generated ${prompt.meta.generatedAt} for ${prompt.meta.pageUrl || '(unknown page)'}`,
-      `# ${prompt.meta.changeCount} change(s) across ${prompt.meta.selectionCount} target(s) — paste into Claude Code:`,
-    ].join('\n');
-    const json = JSON.stringify(prompt, null, 2);
-    const fence = '\u0060\u0060\u0060';
-    return `${preamble}\n\n${fence}json\n${json}\n${fence}\n`;
-  }
-
-  async copyToClipboard(
-    records?: readonly PromptSourceRecord[],
-    fallbackHost?: ParentNode,
-  ): Promise<boolean> {
-    if (records || fallbackHost) {
-      // Legacy path: render the markdown-fenced text and use the
-      // host-supplied fallback container. Kept verbatim from the
-      // pre-S2-A implementation.
-      const text = this.buildPromptText(records);
-      const nav = (globalThis as { navigator?: Navigator }).navigator;
-      if (nav?.clipboard?.writeText) {
-        try {
-          await nav.clipboard.writeText(text);
-          return true;
-        } catch (err) {
-          console.warn(
-            '[paperx/JsonPromptExporter] clipboard.writeText failed (legacy path)',
-            err,
-          );
-        }
-      }
-      const doc = (globalThis as { document?: Document }).document;
-      if (!doc) return false;
-      try {
-        const ta = doc.createElement('textarea');
-        ta.value = text;
-        ta.style.cssText =
-          'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
-        ta.setAttribute('readonly', 'true');
-        const host = fallbackHost ?? doc.body;
-        host.appendChild(ta);
-        ta.select();
-        ta.setSelectionRange(0, text.length);
-        const ok = doc.execCommand('copy');
-        ta.remove();
-        return ok;
-      } catch (err) {
-        console.warn(
-          '[paperx/JsonPromptExporter] execCommand fallback failed (legacy path)',
-          err,
-        );
-        return false;
-      }
-    }
-    const r = await this.exportToClipboard();
-    return r.ok;
   }
 
   async exportToClipboard(): Promise<ExportResult> {
@@ -256,14 +160,7 @@ export class JsonPromptExporter implements IJsonPromptExporter {
 
     for (const r of records) {
       const el = resolveTarget(r.id);
-      // PromptSourceRecord may carry an explicit dataUid; trust
-      // it when set, else read from the live element.
-      const explicitUid = (r as PromptSourceRecord).dataUid;
-      const uidFromEl = el ? readDataUid(el) : null;
-      const uid =
-        explicitUid !== undefined && explicitUid !== null
-          ? explicitUid
-          : uidFromEl;
+      const uid = el ? readDataUid(el) : null;
       const key = uid ?? r.selector;
 
       let g = groups.get(key);

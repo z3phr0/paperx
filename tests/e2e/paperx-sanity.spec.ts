@@ -189,24 +189,12 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
         async () => await navigator.clipboard.readText(),
       );
       expect(clipboardText.length).toBeGreaterThan(0);
-      // The header's Export Prompt button calls
-      // exporter.copyToClipboard(undefined, portal); the truthy
-      // fallbackHost arg routes through the legacy markdown-fenced
-      // path, so the clipboard contains:
-      //   # paperx prompt (paperx-prompt-v1)
-      //   # generated ... for ...
-      //   # N change(s) across M target(s) ...
-      //
-      //   ```json
-      //   { ...prompt v1... }
-      //   ```
-      // We assert on both the schema string substring (cheap proof
-      // of identity) and the parsed JSON inside the fence (deep
-      // proof we can round-trip).
+      // S3-B: clipboard is now pure paperx-prompt-v1 JSON — no
+      // markdown fence, no preamble. Substring check first as a
+      // cheap identity proof, then full JSON.parse for the round-
+      // trip assertion.
       expect(clipboardText).toContain('"schema": "paperx-prompt-v1"');
-      const fenceMatch = clipboardText.match(/```json\n([\s\S]*?)\n```/);
-      expect(fenceMatch).not.toBeNull();
-      const parsed = JSON.parse(fenceMatch![1]!);
+      const parsed = JSON.parse(clipboardText);
       expect(parsed.schema).toBe('paperx-prompt-v1');
       expect(Array.isArray(parsed.targets)).toBe(true);
       expect(parsed.targets.length).toBeGreaterThan(0);
