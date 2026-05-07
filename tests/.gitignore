@@ -1,0 +1,4 @@
+# Playwright artefacts — keep them out of git, sanity suite shouldn't grow noise.
+/test-results/
+/playwright-report/
+/trace/
