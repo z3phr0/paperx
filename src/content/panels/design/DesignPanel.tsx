@@ -20,10 +20,8 @@ import type { SelectionStore } from '@/shared/stores/SelectionStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { buildSelector } from '@/shared/types/changes';
 
-import { SizeSection } from './sections/Size';
+import { BoxModelSection } from './sections/BoxModel';
 import { TypographySection } from './sections/Typography';
-import { SpacingSection } from './sections/Spacing';
-import { PositionSection } from './sections/Position';
 import { LayoutSection } from './sections/Layout';
 
 interface SectionConfig {
@@ -33,10 +31,8 @@ interface SectionConfig {
 }
 
 const SECTIONS: readonly SectionConfig[] = [
-  { id: 'size', title: 'Size', render: (t, s) => <SizeSection target={t} styleEdit={s} /> },
+  { id: 'boxmodel', title: 'Box Model', render: (t, s) => <BoxModelSection target={t} styleEdit={s} /> },
   { id: 'typography', title: 'Typography', render: (t, s) => <TypographySection target={t} styleEdit={s} /> },
-  { id: 'spacing', title: 'Spacing', render: (t, s) => <SpacingSection target={t} styleEdit={s} /> },
-  { id: 'position', title: 'Position', render: (t, s) => <PositionSection target={t} styleEdit={s} /> },
   { id: 'layout', title: 'Layout', render: (t, s) => <LayoutSection target={t} styleEdit={s} /> },
 ];
 
