@@ -20,6 +20,10 @@ import {
   StyleEditService,
   type IStyleEditService,
 } from '@/shared/services/StyleEditService';
+import {
+  JsonPromptExporter,
+  type IJsonPromptExporter,
+} from '@/shared/services/JsonPromptExporter';
 
 export function createContainer(): Container {
   const container = new Container({ defaultScope: 'Singleton' });
@@ -39,6 +43,10 @@ export function createContainer(): Container {
   container
     .bind<ChangeLogUIStore>(TYPES.ChangeLogUIStore)
     .to(ChangeLogUIStore)
+    .inSingletonScope();
+  container
+    .bind<IJsonPromptExporter>(TYPES.JsonPromptExporter)
+    .to(JsonPromptExporter)
     .inSingletonScope();
   return container;
 }
