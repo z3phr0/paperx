@@ -1,0 +1,42 @@
+{
+  "name": "paperx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Visual CSS editor for designers — edit on any page, export as Claude Code prompt.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'lint placeholder (eslint config coming in phase 2)'",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "mobx": "^6.13.5",
+    "mobx-react-lite": "^4.0.7",
+    "inversify": "^6.0.3",
+    "reflect-metadata": "^0.2.2",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.5",
+    "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.468.0",
+    "@radix-ui/react-slot": "^1.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@crxjs/vite-plugin": "^2.0.0-beta.32",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.10.1",
+    "tailwindcss": "^3.4.16",
+    "postcss": "^8.4.49",
+    "autoprefixer": "^10.4.20",
+    "prettier": "^3.4.2"
+  }
+}

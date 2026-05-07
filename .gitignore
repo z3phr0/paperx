@@ -5,15 +5,11 @@
 /.pnp
 .pnp.js
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
+# build output
+/dist
+/.vite
 /build
+/coverage
 
 # misc
 .DS_Store
@@ -23,14 +19,16 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+bun-debug.log*
 
 # local env files
 .env*.local
 .env
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
