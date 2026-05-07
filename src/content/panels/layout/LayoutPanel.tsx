@@ -1,25 +1,39 @@
 /**
- * LayoutPanel — container-level structural editor.
+ * LayoutPanel — container-level structural editor (Figma-style).
  *
- * Visible iff `mode === 'layout' && selected != null`. Surfaces the
- * `display` value as a quick-toggle row plus the most common
- * flex/grid props. Writes go through StyleEditService so every change
- * shows up in the ChangeLog like any design-mode edit.
+ * Visible iff `mode === 'layout' && selected != null`. The panel surfaces
+ * `display` as a quick-toggle button row; when the chosen value is
+ * flex-like or grid-like the corresponding sub-panel renders below.
+ * Writes go through StyleEditService so every change shows up in the
+ * ChangeLog.
  *
- * Differs from design/sections/Layout in scope: design's section is
- * one of five panels and shares its panel real estate with sibling
- * sections. This panel is the focused tool when a reviewer is
- * specifically auditing layout structure.
+ * Why plain `<Button>` for the Display row instead of Segmented:
+ * Radix `ToggleGroup` items render with `role="radio"` (not `button`)
+ * when `type="single"`. The Sprint-3 e2e at
+ * `tests/e2e/paperx-sanity.spec.ts:491` reaches for the flex toggle via
+ * `getByRole('button', { name: 'flex', exact: true })` — a radio role
+ * would fail the lookup. Using plain Buttons keeps the e2e green and
+ * preserves the visual pill-row look. Inner sub-panels (Flex / Grid)
+ * still use Segmented for their direction / wrap / auto-flow controls,
+ * since those aren't gated by a button-role e2e.
+ *
+ * Hooks-order rule (see CLAUDE.md): every useState / useEffect MUST run
+ * BEFORE any conditional return. The `gap` draft state lives on this
+ * root component and is shared with both Flex and Grid sub-panels (both
+ * write the same CSS `gap` property), so the hook count stays stable
+ * across renders even when the target is null.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 import { Button } from '@/shared/ui/button';
-import { Card, CardHeader, CardContent } from '@/shared/ui/Card';
 import type { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { buildSelector } from '@/shared/types/changes';
+
+import { FlexControls } from './sections/FlexControls';
+import { GridControls } from './sections/GridControls';
 
 interface Props {
   uiStore: UIStore;
@@ -27,46 +41,43 @@ interface Props {
   styleEdit: IStyleEditService;
 }
 
-const DISPLAY_OPTIONS = ['block', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid'] as const;
-const FLEX_DIRECTIONS = ['row', 'row-reverse', 'column', 'column-reverse'] as const;
-const JUSTIFY_OPTIONS = ['flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly'] as const;
-const ALIGN_OPTIONS = ['stretch', 'flex-start', 'center', 'flex-end', 'baseline'] as const;
+type DisplayValue =
+  | 'block'
+  | 'inline-block'
+  | 'flex'
+  | 'inline-flex'
+  | 'grid'
+  | 'inline-grid';
 
-interface RowProps {
-  label: string;
-  options: readonly string[];
-  current: string;
-  onPick: (v: string) => void;
-}
-function ToggleRow({ label, options, current, onPick }: RowProps): React.ReactElement {
-  return (
-    <div className="space-y-1">
-      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
-      <div className="flex flex-wrap gap-1">
-        {options.map((opt) => {
-          const active = current === opt;
-          return (
-            <Button
-              key={opt}
-              variant={active ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onPick(opt)}
-              className="h-6 px-2 text-[10px]"
-            >
-              {opt}
-            </Button>
-          );
-        })}
-      </div>
-    </div>
-  );
+// `flex` button MUST render with accessible name exactly 'flex' (the
+// label text doubles as the accessible name on a plain <button>).
+const DISPLAY_OPTIONS: ReadonlyArray<DisplayValue> = [
+  'block',
+  'inline-block',
+  'flex',
+  'inline-flex',
+  'grid',
+  'inline-grid',
+];
+
+function coerceDisplay(raw: string): DisplayValue {
+  switch (raw) {
+    case 'block':
+    case 'inline-block':
+    case 'flex':
+    case 'inline-flex':
+    case 'grid':
+    case 'inline-grid':
+      return raw;
+    default:
+      return 'block';
+  }
 }
 
 export const LayoutPanel = observer(
   ({ uiStore, selectionStore, styleEdit }: Props) => {
     // Hook order MUST stay stable across renders, so call hooks before
-    // any early return. The render body further down handles the
-    // null-target case after the visibility gate.
+    // any early return. Target may be null; reads use a `'0px'` default.
     const target = selectionStore.selected;
     const csGap = target ? window.getComputedStyle(target).gap || '0px' : '0px';
     const [gapDraft, setGapDraft] = React.useState(csGap);
@@ -79,11 +90,9 @@ export const LayoutPanel = observer(
     if (!visible || !target) return null;
 
     const cs = window.getComputedStyle(target);
-    const display = cs.display;
+    const display = coerceDisplay(cs.display);
     const isFlexLike = display === 'flex' || display === 'inline-flex';
     const isGridLike = display === 'grid' || display === 'inline-grid';
-
-    const apply = (prop: string, value: string) => styleEdit.apply(target, prop, value);
 
     return (
       <aside
@@ -98,67 +107,54 @@ export const LayoutPanel = observer(
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Selection
           </div>
-          <div className="truncate font-mono text-[11px]">{buildSelector(target)}</div>
+          <div className="truncate font-mono text-[11px]">
+            {buildSelector(target)}
+          </div>
         </header>
 
-        <Card className="mb-2">
-          <CardHeader className="text-[10px] uppercase">Display</CardHeader>
-          <CardContent>
-            <ToggleRow
-              label="display"
-              options={DISPLAY_OPTIONS}
-              current={display}
-              onPick={(v) => apply('display', v)}
-            />
-          </CardContent>
-        </Card>
+        <section className="mb-3 space-y-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Display
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {DISPLAY_OPTIONS.map((opt) => {
+              const active = display === opt;
+              return (
+                <Button
+                  key={opt}
+                  variant={active ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => styleEdit.apply(target, 'display', opt)}
+                  className="h-6 px-2 text-[10px]"
+                  data-testid={`paperx-layout-display-${opt}`}
+                >
+                  {opt}
+                </Button>
+              );
+            })}
+          </div>
+        </section>
 
         {isFlexLike && (
-          <Card className="mb-2">
-            <CardHeader className="text-[10px] uppercase">Flex</CardHeader>
-            <CardContent className="space-y-2">
-              <ToggleRow
-                label="direction"
-                options={FLEX_DIRECTIONS}
-                current={cs.flexDirection}
-                onPick={(v) => apply('flex-direction', v)}
-              />
-              <ToggleRow
-                label="justify"
-                options={JUSTIFY_OPTIONS}
-                current={cs.justifyContent}
-                onPick={(v) => apply('justify-content', v)}
-              />
-              <ToggleRow
-                label="align"
-                options={ALIGN_OPTIONS}
-                current={cs.alignItems}
-                onPick={(v) => apply('align-items', v)}
-              />
-            </CardContent>
-          </Card>
+          <section className="mb-3">
+            <FlexControls
+              target={target}
+              styleEdit={styleEdit}
+              gap={gapDraft}
+              setGap={setGapDraft}
+            />
+          </section>
         )}
 
-        {(isFlexLike || isGridLike) && (
-          <Card>
-            <CardHeader className="text-[10px] uppercase">Gap</CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={gapDraft}
-                  onChange={(e) => setGapDraft(e.target.value)}
-                  onBlur={() => apply('gap', gapDraft)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  }}
-                  className="w-20 rounded border bg-background px-1.5 py-0.5 text-[11px] outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="0px"
-                />
-                <span className="text-[10px] text-muted-foreground">e.g. 8px or 4px 8px</span>
-              </div>
-            </CardContent>
-          </Card>
+        {isGridLike && (
+          <section className="mb-3">
+            <GridControls
+              target={target}
+              styleEdit={styleEdit}
+              gap={gapDraft}
+              setGap={setGapDraft}
+            />
+          </section>
         )}
       </aside>
     );
