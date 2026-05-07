@@ -10,17 +10,30 @@ import { Container } from 'inversify';
 
 import { TYPES } from './tokens';
 import { UIStore } from '@/shared/stores/UIStore';
+import { SelectionStore } from '@/shared/stores/SelectionStore';
 import {
   ChangeLogService,
   type IChangeLogService,
 } from '@/shared/services/ChangeLogService';
+import {
+  StyleEditService,
+  type IStyleEditService,
+} from '@/shared/services/StyleEditService';
 
 export function createContainer(): Container {
   const container = new Container({ defaultScope: 'Singleton' });
   container.bind<UIStore>(TYPES.UIStore).to(UIStore).inSingletonScope();
   container
+    .bind<SelectionStore>(TYPES.SelectionStore)
+    .to(SelectionStore)
+    .inSingletonScope();
+  container
     .bind<IChangeLogService>(TYPES.ChangeLogService)
     .to(ChangeLogService)
+    .inSingletonScope();
+  container
+    .bind<IStyleEditService>(TYPES.StyleEditService)
+    .to(StyleEditService)
     .inSingletonScope();
   return container;
 }
