@@ -24,8 +24,6 @@ export { ChangeLogDrawer } from './ChangeLogDrawer';
 export { ChangeLogHeader } from './ChangeLogHeader';
 export { ChangeLogFilters } from './ChangeLogFilters';
 export { ChangeLogRow } from './ChangeLogRow';
-export { ChangeRow } from './ChangeRow';
-export { FilterBar } from './FilterBar';
 
 export interface ChangeLogProps {
   uiStore: UIStore;
