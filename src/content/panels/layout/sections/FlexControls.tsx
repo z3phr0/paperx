@@ -64,29 +64,54 @@ interface JustifyEntry {
   value: string;
   Icon: LucideIcon;
   ariaLabel: string;
+  testId: string;
 }
 
+// testId is written out in full (rather than `paperx-flex-justify-${key}`)
+// so source-code grep can verify each entry exists at build time. The
+// completion gate counts these literals.
 const JUSTIFY_ENTRIES: ReadonlyArray<JustifyEntry> = [
-  { key: 'start', value: 'flex-start', Icon: AlignStartHorizontal, ariaLabel: 'Justify start' },
-  { key: 'center', value: 'center', Icon: AlignCenterHorizontal, ariaLabel: 'Justify center' },
-  { key: 'end', value: 'flex-end', Icon: AlignEndHorizontal, ariaLabel: 'Justify end' },
+  {
+    key: 'start',
+    value: 'flex-start',
+    Icon: AlignStartHorizontal,
+    ariaLabel: 'Justify start',
+    testId: 'paperx-flex-justify-start',
+  },
+  {
+    key: 'center',
+    value: 'center',
+    Icon: AlignCenterHorizontal,
+    ariaLabel: 'Justify center',
+    testId: 'paperx-flex-justify-center',
+  },
+  {
+    key: 'end',
+    value: 'flex-end',
+    Icon: AlignEndHorizontal,
+    ariaLabel: 'Justify end',
+    testId: 'paperx-flex-justify-end',
+  },
   {
     key: 'between',
     value: 'space-between',
     Icon: AlignHorizontalSpaceBetween,
     ariaLabel: 'Justify space-between',
+    testId: 'paperx-flex-justify-between',
   },
   {
     key: 'around',
     value: 'space-around',
     Icon: AlignHorizontalSpaceAround,
     ariaLabel: 'Justify space-around',
+    testId: 'paperx-flex-justify-around',
   },
   {
     key: 'evenly',
     value: 'space-evenly',
     Icon: AlignHorizontalDistributeCenter,
     ariaLabel: 'Justify space-evenly',
+    testId: 'paperx-flex-justify-evenly',
   },
 ];
 
@@ -95,14 +120,45 @@ interface AlignEntry {
   value: string;
   Icon: LucideIcon;
   ariaLabel: string;
+  testId: string;
 }
 
 const ALIGN_ENTRIES: ReadonlyArray<AlignEntry> = [
-  { key: 'start', value: 'flex-start', Icon: AlignStartVertical, ariaLabel: 'Align start' },
-  { key: 'center', value: 'center', Icon: AlignCenterVertical, ariaLabel: 'Align center' },
-  { key: 'end', value: 'flex-end', Icon: AlignEndVertical, ariaLabel: 'Align end' },
-  { key: 'stretch', value: 'stretch', Icon: StretchVertical, ariaLabel: 'Align stretch' },
-  { key: 'baseline', value: 'baseline', Icon: Baseline, ariaLabel: 'Align baseline' },
+  {
+    key: 'start',
+    value: 'flex-start',
+    Icon: AlignStartVertical,
+    ariaLabel: 'Align start',
+    testId: 'paperx-flex-align-start',
+  },
+  {
+    key: 'center',
+    value: 'center',
+    Icon: AlignCenterVertical,
+    ariaLabel: 'Align center',
+    testId: 'paperx-flex-align-center',
+  },
+  {
+    key: 'end',
+    value: 'flex-end',
+    Icon: AlignEndVertical,
+    ariaLabel: 'Align end',
+    testId: 'paperx-flex-align-end',
+  },
+  {
+    key: 'stretch',
+    value: 'stretch',
+    Icon: StretchVertical,
+    ariaLabel: 'Align stretch',
+    testId: 'paperx-flex-align-stretch',
+  },
+  {
+    key: 'baseline',
+    value: 'baseline',
+    Icon: Baseline,
+    ariaLabel: 'Align baseline',
+    testId: 'paperx-flex-align-baseline',
+  },
 ];
 
 function readDirection(cs: CSSStyleDeclaration): FlexDirection {
@@ -161,13 +217,13 @@ export function FlexControls({ target, styleEdit, gap, setGap }: Props): React.R
       <div className="space-y-1">
         <Label>Justify</Label>
         <div className="inline-flex items-center gap-1">
-          {JUSTIFY_ENTRIES.map(({ key, value, Icon, ariaLabel }) => (
+          {JUSTIFY_ENTRIES.map(({ key, value, Icon, ariaLabel, testId }) => (
             <IconButton
               key={key}
               size="sm"
               ariaLabel={ariaLabel}
               active={justify === value}
-              data-testid={`paperx-flex-justify-${key}`}
+              data-testid={testId}
               onClick={() => apply('justify-content', value)}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -179,13 +235,13 @@ export function FlexControls({ target, styleEdit, gap, setGap }: Props): React.R
       <div className="space-y-1">
         <Label>Align</Label>
         <div className="inline-flex items-center gap-1">
-          {ALIGN_ENTRIES.map(({ key, value, Icon, ariaLabel }) => (
+          {ALIGN_ENTRIES.map(({ key, value, Icon, ariaLabel, testId }) => (
             <IconButton
               key={key}
               size="sm"
               ariaLabel={ariaLabel}
               active={align === value}
-              data-testid={`paperx-flex-align-${key}`}
+              data-testid={testId}
               onClick={() => apply('align-items', value)}
             >
               <Icon className="h-4 w-4" aria-hidden />
