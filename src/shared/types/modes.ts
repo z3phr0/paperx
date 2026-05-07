@@ -1,9 +1,15 @@
 /**
- * paperx tool modes — the four operating contexts the floating toolbar
- * exposes. Phase 1 only renders the mode buttons; behavior (DOM editing,
- * ruler overlay, ...) lands in Phase 2+.
+ * paperx tool modes — the operating contexts the floating toolbar
+ * exposes. Sprint 3 adds 'transition' for the animation panel + cubic
+ * bezier editor.
  */
-export const TOOL_MODES = ['design', 'ruler', 'comment', 'layout'] as const;
+export const TOOL_MODES = [
+  'design',
+  'ruler',
+  'comment',
+  'layout',
+  'transition',
+] as const;
 
 export type ToolMode = (typeof TOOL_MODES)[number];
 
@@ -12,4 +18,5 @@ export const TOOL_MODE_LABELS: Record<ToolMode, string> = {
   ruler: 'Ruler',
   comment: 'Comment',
   layout: 'Layout',
+  transition: 'Transition',
 };

@@ -21,7 +21,7 @@
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Pencil, Ruler, MessageSquare, LayoutGrid, X, History } from 'lucide-react';
+import { Pencil, Ruler, MessageSquare, LayoutGrid, Zap, X, History } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
@@ -52,6 +52,7 @@ const MODE_ICONS: Record<ToolMode, React.ComponentType<{ className?: string }>> 
   ruler: Ruler,
   comment: MessageSquare,
   layout: LayoutGrid,
+  transition: Zap,
 };
 
 interface Props {

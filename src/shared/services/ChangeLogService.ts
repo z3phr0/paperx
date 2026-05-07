@@ -23,6 +23,8 @@
 import { injectable } from 'inversify';
 import { makeObservable, observable, action } from 'mobx';
 
+import type { ToolMode } from '@/shared/types/modes';
+
 export interface ChangeRecord {
   /** Stable id, e.g. crypto.randomUUID(). */
   id: string;
@@ -37,7 +39,7 @@ export interface ChangeRecord {
   /** New value. */
   after: string;
   /** Origin tool mode that produced this change. */
-  mode: 'design' | 'ruler' | 'comment' | 'layout';
+  mode: ToolMode;
 }
 
 export interface ChangeLogFilter {

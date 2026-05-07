@@ -34,6 +34,7 @@ const MODE_BADGE_CLASS: Record<ToolMode, string> = {
   ruler: 'bg-amber-500/15 text-amber-700',
   comment: 'bg-emerald-500/15 text-emerald-700',
   layout: 'bg-purple-500/15 text-purple-700',
+  transition: 'bg-pink-500/15 text-pink-700',
 };
 
 const PULSE_MS = 800;
