@@ -511,3 +511,166 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 });
+
+/**
+ * Sprint 2 — Figma BoxModel + Flex/Grid panels.
+ *
+ * Each test exercises the new Sprint 2 surface:
+ *   1. BoxModel width input writes inline style.width.
+ *   2. Padding link toggle broadcasts one numeric edit to all 4 sides.
+ *   3. Flex justify quick-button writes justify-content.
+ *   4. Grid template-cols input writes grid-template-columns.
+ */
+test.describe('paperx Sprint 2 (B + C)', () => {
+  test('BoxModel: editing W writes inline width and surfaces a ChangeLog row', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const wInput = page.locator('[data-testid="paperx-boxmodel-w"]');
+      await expect(wInput).toBeVisible({ timeout: 5_000 });
+      await wInput.fill('123');
+      await wInput.press('Tab');
+
+      await expect
+        .poll(async () => target.evaluate((el) => (el as HTMLElement).style.width), {
+          timeout: 5_000,
+        })
+        .toBe('123px');
+
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('width'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('BoxModel: padding link toggle broadcasts to all 4 sides', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      // Toggle link mode FIRST so the next single-cell edit broadcasts.
+      const linkToggle = page.locator('[data-testid="paperx-boxmodel-link-padding"]');
+      await expect(linkToggle).toBeVisible({ timeout: 5_000 });
+      await linkToggle.click();
+
+      const ptInput = page.locator('[data-testid="paperx-boxmodel-pt"]');
+      await ptInput.fill('20');
+      await ptInput.press('Tab');
+
+      // All four padding sides should be 20px.
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => {
+              const s = (el as HTMLElement).style;
+              return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
+            }),
+          { timeout: 5_000 },
+        )
+        .toEqual(['20px', '20px', '20px', '20px']);
+
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      const paddingRows = rowsText.filter((t) => /padding-(top|right|bottom|left)/.test(t));
+      expect(paddingRows.length).toBeGreaterThanOrEqual(4);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Flex: justify-center quick button writes justify-content: center', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-layout"]').click();
+      const target = page.locator('[data-uid="hero-title-001"]');
+      await target.click();
+
+      // Switch to display:flex so the FlexControls section mounts.
+      await page.locator('[data-testid="paperx-layout-display-flex"]').click();
+      await expect
+        .poll(async () => target.evaluate((el) => (el as HTMLElement).style.display), {
+          timeout: 5_000,
+        })
+        .toBe('flex');
+
+      // Click the center justify quick button.
+      const justifyCenter = page.locator('[data-testid="paperx-flex-justify-center"]');
+      await expect(justifyCenter).toBeVisible({ timeout: 5_000 });
+      await justifyCenter.click();
+
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => (el as HTMLElement).style.justifyContent),
+          { timeout: 5_000 },
+        )
+        .toBe('center');
+
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('justify-content'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Grid: editing template-cols writes inline grid-template-columns', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-layout"]').click();
+      const target = page.locator('[data-uid="hero-title-001"]');
+      await target.click();
+
+      await page.locator('[data-testid="paperx-layout-display-grid"]').click();
+      await expect
+        .poll(async () => target.evaluate((el) => (el as HTMLElement).style.display), {
+          timeout: 5_000,
+        })
+        .toBe('grid');
+
+      const colsInput = page.locator('[data-testid="paperx-grid-template-cols"]');
+      await expect(colsInput).toBeVisible({ timeout: 5_000 });
+      await colsInput.fill('1fr 2fr');
+      await colsInput.press('Tab');
+
+      await expect
+        .poll(
+          async () =>
+            target.evaluate(
+              (el) => (el as HTMLElement).style.gridTemplateColumns,
+            ),
+          { timeout: 5_000 },
+        )
+        .toBe('1fr 2fr');
+
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('grid-template-columns'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
+});
