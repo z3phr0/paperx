@@ -8,5 +8,17 @@
     <h1 data-uid="hero-title-001" style="color:#111">Hello paperx</h1>
     <p data-uid="hero-desc-002" style="font-size:14px;color:#444">A sanity fixture for the extension.</p>
     <button data-uid="cta-btn-003" style="padding:8px 16px;font-size:14px">Click me</button>
+
+    <!-- Snap-test pair: two ABSOLUTELY-positioned siblings so growing
+         snap-A's width does NOT push snap-B sideways (flex+gap would).
+         snap-A.right = 120, snap-B.left = 200 → 80 px gap. Dragging
+         snap-A's E handle ~80 px right should park snap-A's right edge
+         on snap-B's left edge, with the snap engine aligning to within
+         4 px and rendering the magenta guide at x = 200 (in fixture
+         coords). -->
+    <div style="position:relative;height:80px;margin-top:32px">
+      <div data-uid="snap-A-100" style="position:absolute;left:0;top:0;width:120px;height:60px;background:#cbd5e1"></div>
+      <div data-uid="snap-B-200" style="position:absolute;left:200px;top:0;width:120px;height:60px;background:#fbbf24"></div>
+    </div>
   </body>
 </html>

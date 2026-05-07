@@ -265,6 +265,75 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
+  test('snap engine: dragging E handle near a sibling edge surfaces a magenta guide and snaps the width', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      const left = page.locator('[data-uid="snap-A-100"]');
+      const right = page.locator('[data-uid="snap-B-200"]');
+
+      // Geometry sanity from the fixture: read both rects in the page
+      // so the test stays robust if the fixture's margins ever change.
+      const beforeRects = await page.evaluate(() => {
+        const a = document.querySelector('[data-uid="snap-A-100"]')!.getBoundingClientRect();
+        const b = document.querySelector('[data-uid="snap-B-200"]')!.getBoundingClientRect();
+        return { a: { left: a.left, right: a.right }, b: { left: b.left, right: b.right } };
+      });
+      // The 60 px flex gap means b.left - a.right is exactly the gap.
+      const gap = beforeRects.b.left - beforeRects.a.right;
+      expect(gap).toBeGreaterThan(20);
+
+      // Select the LEFT block, then drag its E handle rightward — its
+      // right edge should snap to the right block's left edge once we
+      // approach within 4 px. We aim slightly past the snap zone (gap
+      // + 1 px) so the engine has to actively snap us back.
+      await left.click();
+      const handle = page.locator('[data-testid="paperx-resize-e"]');
+      await expect(handle).toBeVisible({ timeout: 5_000 });
+      const hb = await handle.boundingBox();
+      expect(hb).not.toBeNull();
+
+      const startX = hb!.x + hb!.width / 2;
+      const startY = hb!.y + hb!.height / 2;
+      const targetX = startX + gap + 1;
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      // Step in chunks so the snap engine sees a frame inside the snap
+      // zone (it only locks while we are within threshold).
+      await page.mouse.move(startX + Math.round(gap / 2), startY, { steps: 6 });
+      await page.mouse.move(targetX, startY, { steps: 8 });
+
+      // While still pressed (no mouseup yet) the magenta guide must
+      // exist at the snap X. We use `toBeAttached` rather than
+      // `toBeVisible` because SVG <line> elements don't satisfy
+      // Playwright's layout-box-based visibility heuristic even when
+      // they paint correctly. We verify the geometry via x1.
+      const guide = page.locator('[data-testid="paperx-snap-guide-x"]');
+      await expect(guide).toBeAttached({ timeout: 1_000 });
+      const x1 = await guide.getAttribute('x1');
+      expect(Number(x1)).toBeCloseTo(beforeRects.b.left, 0);
+
+      await page.mouse.up();
+
+      // The guide is detached the moment commit starts.
+      await expect(guide).not.toBeAttached();
+
+      // Final inline width: A's right edge should be aligned with B's
+      // left edge ± 1 px (rounding tolerance from the engine).
+      const after = await page.evaluate(() => {
+        const a = document.querySelector('[data-uid="snap-A-100"]')!.getBoundingClientRect();
+        const b = document.querySelector('[data-uid="snap-B-200"]')!.getBoundingClientRect();
+        return { aRight: a.right, bLeft: b.left };
+      });
+      expect(Math.abs(after.aRight - after.bLeft)).toBeLessThanOrEqual(1);
+    } finally {
+      await ctx.close();
+    }
+  });
+
   test('design mode rotate handle drag writes transform: rotate to inline style', async () => {
     const ctx = await launchWithExtension();
     try {

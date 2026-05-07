@@ -38,6 +38,8 @@ import { HoverTooltip } from './overlays/HoverTooltip';
 import { ViewportRulers } from './overlays/ViewportRulers';
 import { ResizeHandles } from './overlays/ResizeHandles';
 import { RotateHandle } from './overlays/RotateHandle';
+import { SnapGuidelines } from './overlays/snap/SnapGuidelines';
+import { SnapStore } from '@/shared/stores/SnapStore';
 import { DesignPanel } from './panels/design';
 import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
@@ -142,6 +144,7 @@ export const FloatingToolbar = observer(({ store }: Props) => {
   const styleEdit = container.get<IStyleEditService>(TYPES.StyleEditService);
   const changeLogUIStore = container.get<ChangeLogUIStore>(TYPES.ChangeLogUIStore);
   const commentStore = container.get<CommentStore>(TYPES.CommentStore);
+  const snapStore = container.get<SnapStore>(TYPES.SnapStore);
 
   return (
     <>
@@ -149,7 +152,13 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <ElementPicker uiStore={store} selectionStore={selectionStore} />
       <HoverTooltip uiStore={store} selectionStore={selectionStore} />
       <ViewportRulers uiStore={store} selectionStore={selectionStore} />
-      <ResizeHandles uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
+      <SnapGuidelines snapStore={snapStore} />
+      <ResizeHandles
+        uiStore={store}
+        selectionStore={selectionStore}
+        snapStore={snapStore}
+        styleEdit={styleEdit}
+      />
       <RotateHandle uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <RulerPanel uiStore={store} selectionStore={selectionStore} />

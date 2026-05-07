@@ -13,6 +13,7 @@ import { UIStore } from '@/shared/stores/UIStore';
 import { SelectionStore } from '@/shared/stores/SelectionStore';
 import { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import { CommentStore } from '@/shared/stores/CommentStore';
+import { SnapStore } from '@/shared/stores/SnapStore';
 import {
   ChangeLogService,
   type IChangeLogService,
@@ -52,6 +53,10 @@ export function createContainer(): Container {
   container
     .bind<CommentStore>(TYPES.CommentStore)
     .to(CommentStore)
+    .inSingletonScope();
+  container
+    .bind<SnapStore>(TYPES.SnapStore)
+    .to(SnapStore)
     .inSingletonScope();
   return container;
 }

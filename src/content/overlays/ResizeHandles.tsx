@@ -22,11 +22,18 @@ import { observer } from 'mobx-react-lite';
 
 import type { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
+import type { SnapStore } from '@/shared/stores/SnapStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
+import {
+  collectCandidates,
+  findSnaps,
+  type SnapCandidate,
+} from './snap/SnapEngine';
 
 interface Props {
   uiStore: UIStore;
   selectionStore: SelectionStore;
+  snapStore: SnapStore;
   styleEdit: IStyleEditService;
 }
 
@@ -61,6 +68,8 @@ interface DragState {
   baseline: { width: string; height: string };
   startRect: DOMRect;
   startMouse: { x: number; y: number };
+  /** Cached once at mousedown — never re-collected during drag. */
+  candidates: SnapCandidate[];
 }
 
 function deltaToSize(handle: Handle, startW: number, startH: number, dx: number, dy: number): { w: number; h: number } {
@@ -72,7 +81,7 @@ function deltaToSize(handle: Handle, startW: number, startH: number, dx: number,
   };
 }
 
-export const ResizeHandles = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
+export const ResizeHandles = observer(({ uiStore, selectionStore, snapStore, styleEdit }: Props) => {
   const [drag, setDrag] = React.useState<DragState | null>(null);
   const dragRef = React.useRef<DragState | null>(null);
   dragRef.current = drag;
@@ -95,16 +104,35 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, styleEdit }: P
       e.preventDefault();
       const dx = e.clientX - d.startMouse.x;
       const dy = e.clientY - d.startMouse.y;
-      const { w, h } = deltaToSize(d.handle, d.startRect.width, d.startRect.height, dx, dy);
+      let { w, h } = deltaToSize(d.handle, d.startRect.width, d.startRect.height, dx, dy);
+
+      // Snap detection — pure, single-pass, axis-masked. Only the
+      // handle's active axes can snap.
+      const xActive = d.handle.includes('e') || d.handle.includes('w');
+      const yActive = d.handle.includes('n') || d.handle.includes('s');
+      const snap = findSnaps(
+        { left: d.startRect.left, top: d.startRect.top, width: w, height: h },
+        d.candidates,
+        { x: xActive, y: yActive },
+      );
+      if (xActive && snap.snappedWidth != null) w = snap.snappedWidth;
+      if (yActive && snap.snappedHeight != null) h = snap.snappedHeight;
+      snapStore.setGuides({
+        x: xActive ? snap.guideX : null,
+        y: yActive ? snap.guideY : null,
+      });
+
       // Live preview — raw mutation so service is unaware. Will be
       // reverted before commit.
-      t.style.width = `${Math.round(w)}px`;
-      t.style.height = `${Math.round(h)}px`;
+      t.style.width = `${Math.round(Math.max(MIN_PX, w))}px`;
+      t.style.height = `${Math.round(Math.max(MIN_PX, h))}px`;
     };
 
     const onUp = (e: MouseEvent) => {
       const d = dragRef.current;
       const t = selectionStore.selected;
+      // Clear guides immediately — drag is over either way.
+      snapStore.clear();
       if (!d || !t) {
         setDrag(null);
         return;
@@ -135,7 +163,7 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, styleEdit }: P
       window.removeEventListener('mousemove', onMove, true);
       window.removeEventListener('mouseup', onUp, true);
     };
-  }, [drag, selectionStore, styleEdit]);
+  }, [drag, selectionStore, snapStore, styleEdit]);
 
   if (!visible || !target || !rect) return null;
 
@@ -150,6 +178,8 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, styleEdit }: P
       },
       startRect: target.getBoundingClientRect(),
       startMouse: { x: e.clientX, y: e.clientY },
+      // Performance: collect candidates ONCE per drag.
+      candidates: collectCandidates(target),
     });
   };
 
