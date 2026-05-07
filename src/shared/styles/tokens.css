@@ -1,21 +1,21 @@
 /*
  * paperx design tokens — HSL values consumed by tailwind.config.ts theme.
- * Light theme defaults; dark mode lands in Phase 2.
+ * Dark frosted-glass identity; light theme deprecated.
  */
 :host {
-  --paperx-background: 0 0% 100%;
+  --paperx-background: 0 0% 12%;
   --paperx-foreground: 0 0% 96%;
-  --paperx-border: 214 32% 91%;
-  --paperx-input: 214 32% 91%;
-  --paperx-ring: 222 84% 50%;
-  --paperx-primary: 222 47% 11%;
-  --paperx-primary-foreground: 210 40% 98%;
-  --paperx-secondary: 210 40% 96%;
-  --paperx-secondary-foreground: 222 47% 11%;
-  --paperx-muted: 210 40% 96%;
+  --paperx-border: 0 0% 18%;
+  --paperx-input: 0 0% 22%;
+  --paperx-ring: 220 90% 65%;
+  --paperx-primary: 0 0% 96%;
+  --paperx-primary-foreground: 0 0% 9%;
+  --paperx-secondary: 0 0% 16%;
+  --paperx-secondary-foreground: 0 0% 96%;
+  --paperx-muted: 0 0% 16%;
   --paperx-muted-foreground: 0 0% 62%;
-  --paperx-accent: 210 40% 96%;
-  --paperx-accent-foreground: 222 47% 11%;
+  --paperx-accent: 0 0% 22%;
+  --paperx-accent-foreground: 0 0% 96%;
   --paperx-radius: 0.5rem;
   --paperx-glass-bg: 0 0% 9%;
   --paperx-glass-border: 0 0% 18%;
