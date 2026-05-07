@@ -674,3 +674,151 @@ test.describe('paperx Sprint 2 (B + C)', () => {
     }
   });
 });
+
+/**
+ * Sprint 3 — Transition panel + Background/Border/Effects sections,
+ * built on the BezierEditor and GradientEditor primitives.
+ */
+test.describe('paperx Sprint 3 (F + G)', () => {
+  test('Transition: mode opens panel + bezier preset writes cubic-bezier', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-transition"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const panel = page.locator('[data-testid="paperx-transition-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+
+      // Click the "ease-in" preset and assert the timing function commits.
+      await page.locator('[data-testid="paperx-bezier-preset-ease-in"]').click();
+
+      await expect
+        .poll(
+          async () =>
+            target.evaluate(
+              (el) => (el as HTMLElement).style.transitionTimingFunction,
+            ),
+          { timeout: 5_000 },
+        )
+        .toMatch(/^cubic-bezier\(/);
+
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('transition-timing-function'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Background: switching to gradient type surfaces the gradient editor', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const gradientType = page.locator('[data-testid="paperx-bg-type-gradient"]');
+      await expect(gradientType).toBeVisible({ timeout: 5_000 });
+      await gradientType.click();
+
+      // The GradientEditor primitive renders its canvas as soon as the
+      // gradient mode is active.
+      await expect(
+        page.locator('[data-testid="paperx-gradient-canvas"]'),
+      ).toBeVisible({ timeout: 5_000 });
+      await expect(
+        page.locator('[data-testid="paperx-gradient-type-linear"]'),
+      ).toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Effects: radius link toggle broadcasts to all 4 corners', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      // Link toggle defaults to ON per spec, but clicking it would turn
+      // it off. We assert it's pressed first; if not, click once to turn
+      // it on.
+      const linkBtn = page.locator('[data-testid="paperx-radius-link"]');
+      await expect(linkBtn).toBeVisible({ timeout: 5_000 });
+      const pressed = await linkBtn.getAttribute('aria-pressed');
+      if (pressed !== 'true') await linkBtn.click();
+
+      const tl = page.locator('[data-testid="paperx-radius-tl"]');
+      await tl.fill('12');
+      await tl.press('Tab');
+
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => {
+              const s = (el as HTMLElement).style;
+              return [
+                s.borderTopLeftRadius,
+                s.borderTopRightRadius,
+                s.borderBottomLeftRadius,
+                s.borderBottomRightRadius,
+              ];
+            }),
+          { timeout: 5_000 },
+        )
+        .toEqual(['12px', '12px', '12px', '12px']);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('JSON Prompt: summary.modes includes "transition" after a transition edit', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-transition"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+      await expect(
+        page.locator('[data-testid="paperx-transition-panel"]'),
+      ).toBeVisible({ timeout: 5_000 });
+
+      await page.locator('[data-testid="paperx-bezier-preset-ease"]').click();
+      await expect
+        .poll(
+          async () =>
+            target.evaluate(
+              (el) => (el as HTMLElement).style.transitionTimingFunction,
+            ),
+          { timeout: 5_000 },
+        )
+        .toMatch(/^cubic-bezier\(/);
+
+      // Open ChangeLog drawer, export prompt, parse clipboard JSON.
+      await page.locator('[data-testid="paperx-history"]').click();
+      const exportBtn = page.locator('[data-testid="paperx-export-prompt"]');
+      await expect(exportBtn).toBeEnabled();
+      await exportBtn.click();
+
+      const clipboardText = await page.evaluate(
+        async () => await navigator.clipboard.readText(),
+      );
+      const parsed = JSON.parse(clipboardText);
+      expect(parsed.schema).toBe('paperx-prompt-v1');
+      expect(parsed.summary.modes).toContain('transition');
+    } finally {
+      await ctx.close();
+    }
+  });
+});
