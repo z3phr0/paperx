@@ -32,3 +32,7 @@ bun-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# Playwright e2e (S3-A)
+/playwright-report
+/test-results
