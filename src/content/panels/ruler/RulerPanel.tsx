@@ -52,7 +52,7 @@ export const RulerPanel = observer(({ uiStore, selectionStore }: Props) => {
       role="complementary"
       aria-label="paperx ruler panel"
       data-testid="paperx-ruler-panel"
-      className="fixed right-4 top-14 bottom-4 z-[2147483640] w-[280px] overflow-y-auto rounded-lg border bg-background p-2 text-foreground shadow-xl"
+      className="paperx-surface fixed right-4 top-14 bottom-4 z-[2147483640] w-[280px] overflow-y-auto rounded-lg p-2 shadow-xl"
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >

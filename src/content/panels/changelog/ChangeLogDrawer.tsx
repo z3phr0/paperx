@@ -78,7 +78,7 @@ export const ChangeLogDrawer = observer(
         role="region"
         aria-label="paperx change log"
         style={containerStyle}
-        className="flex flex-col overflow-hidden rounded-lg border bg-background/95 shadow-xl backdrop-blur"
+        className="paperx-surface flex flex-col overflow-hidden rounded-lg shadow-xl"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
