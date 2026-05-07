@@ -25,10 +25,7 @@
 import { inject, injectable } from 'inversify';
 
 import { TYPES } from '@/shared/di/tokens';
-import {
-  type ChangeRecord,
-  type IChangeLogService,
-} from '@/shared/services/ChangeLogService';
+import { type ChangeRecord, type IChangeLogService } from '@/shared/services/ChangeLogService';
 import { buildSelector, readDataUid } from '@/shared/types/changes';
 import type { ToolMode } from '@/shared/types/modes';
 import {
@@ -86,15 +83,10 @@ interface Group {
 
 @injectable()
 export class JsonPromptExporter implements IJsonPromptExporter {
-  constructor(
-    @inject(TYPES.ChangeLogService) private readonly log: IChangeLogService,
-  ) {}
+  constructor(@inject(TYPES.ChangeLogService) private readonly log: IChangeLogService) {}
 
   build(): PaperxPromptV1 {
-    return this.buildFrom(
-      this.log.list(),
-      (id) => this.log.getTargetById(id),
-    );
+    return this.buildFrom(this.log.list(), (id) => this.log.getTargetById(id));
   }
 
   async exportToClipboard(): Promise<ExportResult> {
@@ -113,10 +105,7 @@ export class JsonPromptExporter implements IJsonPromptExporter {
         await nav.clipboard.writeText(json);
         return { ok: true, promptSize: json.length };
       } catch (err) {
-        console.warn(
-          '[paperx/JsonPromptExporter] clipboard.writeText failed, falling back',
-          err,
-        );
+        console.warn('[paperx/JsonPromptExporter] clipboard.writeText failed, falling back', err);
       }
     }
 
@@ -127,8 +116,7 @@ export class JsonPromptExporter implements IJsonPromptExporter {
       try {
         const ta = doc.createElement('textarea');
         ta.value = json;
-        ta.style.cssText =
-          'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
         ta.setAttribute('readonly', '');
         doc.body.appendChild(ta);
         ta.select();
@@ -137,10 +125,7 @@ export class JsonPromptExporter implements IJsonPromptExporter {
         doc.body.removeChild(ta);
         if (ok) return { ok: true, promptSize: json.length };
       } catch (err) {
-        console.warn(
-          '[paperx/JsonPromptExporter] execCommand copy failed',
-          err,
-        );
+        console.warn('[paperx/JsonPromptExporter] execCommand copy failed', err);
       }
     }
 
@@ -196,18 +181,13 @@ export class JsonPromptExporter implements IJsonPromptExporter {
 
     for (const g of groups.values()) {
       const el = g.element;
-      const tagName = el
-        ? el.tagName.toLowerCase()
-        : extractTag(g.sampleSelector);
+      const tagName = el ? el.tagName.toLowerCase() : extractTag(g.sampleSelector);
       const elUid = el ? readDataUid(el) : null;
       // Group key may itself be a uid; if the live element is gone
       // but the key looks like a uid (no css path delimiters), keep
       // it. This preserves uid-based aggregation across detach.
       const inferredUid =
-        elUid ??
-        (g.key !== g.sampleSelector && !g.key.includes('>')
-          ? g.key
-          : null);
+        elUid ?? (g.key !== g.sampleSelector && !g.key.includes('>') ? g.key : null);
       // Regenerate selector from the live element when possible;
       // fall back to the sample when the element is gone.
       const selector = el ? buildSelector(el) : g.sampleSelector;
@@ -253,10 +233,7 @@ export class JsonPromptExporter implements IJsonPromptExporter {
     const generatedAt = new Date().toISOString();
     const pageUrl = safeRead(() => location.href, '');
     const pageTitle = safeRead(() => document.title, '');
-    const userAgent = safeRead<string | undefined>(
-      () => navigator.userAgent,
-      undefined,
-    );
+    const userAgent = safeRead<string | undefined>(() => navigator.userAgent, undefined);
 
     return {
       schema: PROMPT_SCHEMA_VERSION,

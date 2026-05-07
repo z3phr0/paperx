@@ -40,9 +40,17 @@ interface Props {
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 const HANDLES: readonly Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
-const HANDLE_PX = 10;
+const HANDLE_PX = 7;
 const MIN_PX = 1;
 const Z = 2147483641;
+
+// Figma-aligned visual tokens (mirrored verbatim in RotateHandle and
+// PickerOverlay — three uses doesn't justify a shared module).
+const FIGMA_BLUE = '#18A0FB';
+const HANDLE_SHADOW_REST = '0 1px 2px rgba(0,0,0,0.18)';
+const HANDLE_SHADOW_HOVER =
+  '0 1px 4px rgba(0,0,0,0.22), 0 0 0 2px rgba(24,160,251,0.18)';
+const HANDLE_TRANSITION = 'transform 120ms ease, box-shadow 120ms ease';
 
 interface Anchor {
   /** Center coordinate inside the element bounding box (0..1). */
@@ -83,6 +91,7 @@ function deltaToSize(handle: Handle, startW: number, startH: number, dx: number,
 
 export const ResizeHandles = observer(({ uiStore, selectionStore, snapStore, styleEdit }: Props) => {
   const [drag, setDrag] = React.useState<DragState | null>(null);
+  const [hoveredHandle, setHoveredHandle] = React.useState<Handle | null>(null);
   const dragRef = React.useRef<DragState | null>(null);
   dragRef.current = drag;
 
@@ -189,6 +198,7 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, snapStore, sty
         const a = ANCHORS[h];
         const cx = rect.left + rect.width * a.cx;
         const cy = rect.top + rect.height * a.cy;
+        const isActive = hoveredHandle === h || drag?.handle === h;
         return (
           <div
             key={h}
@@ -196,6 +206,8 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, snapStore, sty
             aria-label={`Resize ${h}`}
             data-testid={a.testid}
             onMouseDown={beginDrag(h)}
+            onMouseEnter={() => setHoveredHandle(h)}
+            onMouseLeave={() => setHoveredHandle((cur) => (cur === h ? null : cur))}
             style={{
               position: 'fixed',
               top: `${cy - HANDLE_PX / 2}px`,
@@ -203,12 +215,15 @@ export const ResizeHandles = observer(({ uiStore, selectionStore, snapStore, sty
               width: `${HANDLE_PX}px`,
               height: `${HANDLE_PX}px`,
               background: '#ffffff',
-              border: '1.5px solid #2563eb',
-              borderRadius: 2,
+              border: `1px solid ${FIGMA_BLUE}`,
+              borderRadius: '50%',
               zIndex: Z,
               cursor: a.cursor,
               pointerEvents: 'auto',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+              boxShadow: isActive ? HANDLE_SHADOW_HOVER : HANDLE_SHADOW_REST,
+              transform: isActive ? 'scale(1.4)' : 'scale(1)',
+              transformOrigin: 'center center',
+              transition: HANDLE_TRANSITION,
             }}
           />
         );

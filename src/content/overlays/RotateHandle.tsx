@@ -27,9 +27,17 @@ interface Props {
   styleEdit: IStyleEditService;
 }
 
-const HANDLE_PX = 18;
-const HANDLE_GAP = 22;
+const HANDLE_PX = 16;
+const HANDLE_GAP = 20;
 const Z = 2147483641;
+
+// Figma-aligned visual tokens (mirrored verbatim in ResizeHandles and
+// PickerOverlay — three uses doesn't justify a shared module).
+const FIGMA_BLUE = '#18A0FB';
+const HANDLE_SHADOW_REST = '0 1px 2px rgba(0,0,0,0.18)';
+const HANDLE_SHADOW_HOVER =
+  '0 1px 4px rgba(0,0,0,0.22), 0 0 0 2px rgba(24,160,251,0.18)';
+const HANDLE_TRANSITION = 'transform 120ms ease, box-shadow 120ms ease';
 
 interface DragState {
   baseline: string; // target.style.transform at mousedown
@@ -53,6 +61,7 @@ function mouseAngleRad(centerX: number, centerY: number, mx: number, my: number)
 
 export const RotateHandle = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
   const [drag, setDrag] = React.useState<DragState | null>(null);
+  const [hovered, setHovered] = React.useState(false);
   const dragRef = React.useRef<DragState | null>(null);
   dragRef.current = drag;
 
@@ -121,6 +130,8 @@ export const RotateHandle = observer(({ uiStore, selectionStore, styleEdit }: Pr
     });
   };
 
+  const isActive = hovered || drag != null;
+
   return (
     <div aria-hidden style={{ pointerEvents: 'none' }}>
       {/* connector line */}
@@ -132,8 +143,8 @@ export const RotateHandle = observer(({ uiStore, selectionStore, styleEdit }: Pr
           left: `${cx - 0.5}px`,
           width: '1px',
           height: `${HANDLE_GAP - HANDLE_PX / 2}px`,
-          background: '#2563eb',
-          opacity: 0.7,
+          background: FIGMA_BLUE,
+          opacity: 0.5,
           zIndex: Z,
           pointerEvents: 'none',
         }}
@@ -143,6 +154,8 @@ export const RotateHandle = observer(({ uiStore, selectionStore, styleEdit }: Pr
         aria-label="Rotate"
         data-testid="paperx-rotate-handle"
         onMouseDown={onMouseDown}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           position: 'fixed',
           top: `${cy - HANDLE_PX / 2}px`,
@@ -151,18 +164,21 @@ export const RotateHandle = observer(({ uiStore, selectionStore, styleEdit }: Pr
           height: `${HANDLE_PX}px`,
           borderRadius: '50%',
           background: '#ffffff',
-          border: '1.5px solid #2563eb',
-          color: '#2563eb',
+          border: `1px solid ${FIGMA_BLUE}`,
+          color: FIGMA_BLUE,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: Z,
-          cursor: 'grab',
+          cursor: drag ? 'grabbing' : 'grab',
           pointerEvents: 'auto',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          boxShadow: isActive ? HANDLE_SHADOW_HOVER : HANDLE_SHADOW_REST,
+          transform: isActive ? 'scale(1.15)' : 'scale(1)',
+          transformOrigin: 'center center',
+          transition: HANDLE_TRANSITION,
         }}
       >
-        <RotateCw style={{ width: 11, height: 11 }} />
+        <RotateCw style={{ width: 10, height: 10 }} />
       </div>
     </div>
   );

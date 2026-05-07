@@ -17,6 +17,11 @@ interface Props {
   store: SelectionStore;
 }
 
+// Figma-aligned visual tokens (mirrored verbatim in ResizeHandles and
+// RotateHandle — three uses doesn't justify a shared module).
+const FIGMA_BLUE = '#18A0FB';
+const FIGMA_BLUE_TINT = 'rgba(24, 160, 251, 0.08)';
+
 function rectStyle(rect: DOMRect | null): React.CSSProperties | undefined {
   if (!rect) return undefined;
   // Clamp tiny rects so the outline is still visible when the target is
@@ -42,8 +47,8 @@ export const PickerOverlay = observer(({ store }: Props) => {
           aria-hidden
           style={{
             ...hoveredStyle,
-            border: '1.5px solid #2563eb',
-            background: 'rgba(37, 99, 235, 0.08)',
+            border: `1px solid ${FIGMA_BLUE}`,
+            background: FIGMA_BLUE_TINT,
             borderRadius: '2px',
             transition: 'top 60ms linear, left 60ms linear, width 60ms linear, height 60ms linear',
           }}
@@ -54,10 +59,8 @@ export const PickerOverlay = observer(({ store }: Props) => {
           aria-hidden
           style={{
             ...selectedStyle,
-            border: '2px solid #2563eb',
-            background: 'rgba(37, 99, 235, 0.04)',
+            border: `1px solid ${FIGMA_BLUE}`,
             borderRadius: '2px',
-            boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.25)',
           }}
         />
       )}
