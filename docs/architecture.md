@@ -12,7 +12,7 @@ paperx 是一个 Chrome 浏览器扩展（Manifest V3）。它让设计师 / 前
 浏览器里改样式 (paperx 工具栏)
         │
         ▼
-导出 JSON Prompt (含 data-paperx-uid 等组件元信息)
+导出 JSON Prompt (按 data-uid 聚合，含 before / after CSS 变更)
         │
         ▼
 粘贴到 Claude Code
@@ -73,32 +73,45 @@ Phase 1 必须给出明确决策的三个风险点：
 - `mode: 'closed'` 替代 `'open'`，提升对宿主页脚本的防御性
 - 测一批"刺头网站"（Twitter/X、Notion、GitHub 自身）的兼容性
 
-### R2. DOM ↔ React 源码桥（让 Claude Code 找到组件）
+### R2. DOM ↔ 源码桥（让 Claude Code 找到组件）
 
-**问题**：JSON Prompt 必须告诉 Claude Code "这个修改是哪个 React 组件的哪个 JSX 元素"，否则 AI 只能盲改 className。
+**问题**：JSON Prompt 必须告诉 Claude Code "这个修改是哪个组件的哪个 DOM 元素"，否则 AI 只能盲改 className。
 
-**候选方案**：
+**底层逻辑修订（Phase 2 — 不要过度设计）**：
 
-| 方案 | 准确度 | 用户成本 | 备注 |
-|------|--------|----------|------|
-| (a) Babel plugin 编译期注入 `data-paperx-uid` | 高（精确到行列） | 用户需在自己项目装一个 babel 插件 | uid 可 hash (file:line:col:tag) 保持稳定 |
-| (b) 运行时反查 React Fiber 的 `_debugSource` | 中（依赖 dev build 的 source map） | 零成本 | production build 没有 `_debugSource`；React 19 fiber 字段名可能变 |
-| (c) 约定用户自己加 `data-component`/`data-source` | 低（依赖人工） | 用户写代码时就要打标 | 适合自有团队规范，对开源项目不可行 |
+paperx **不参与** 标签注入。源码工程方（用户的 React/Vue/Svelte/...项目）按自己的工程实践，编译期或开发期给每个目标 DOM 元素打 `data-uid` 属性。paperx 是**纯消费者**：
 
-**决策（Phase 1 拍板）**：
+```
+用户工程（他们家的 babel/swc/vite plugin / 框架自带 / 手动）
+        │
+        ▼ 编译产物中每个 DOM 已含 data-uid="<工程内唯一 id>"
+        │
+浏览器运行
+        │
+        ▼ paperx 在 DOM 上读 element.getAttribute('data-uid')
+        │
+        ▼ 收集变更 → 按 data-uid 聚合 → JSON Prompt
+        │
+        ▼ 粘到 Claude Code → AI 用 grep 'data-uid="<id>"' 直接定位源码 → 改 CSS
+```
 
-- **主选 (a) Babel plugin**：`tools/babel-plugin-paperx-uid/index.js` 已有 stub。Phase 2 完成 visitor + 单测 + 发布到 npm。
-- **Fallback (b) Fiber 反查**：当用户没装 babel plugin 时，paperx 运行时尝试从 DOM 节点对应的 fiber 读 `_debugSource`（dev build 才有）和 `type.displayName`。Phase 2 实现。
-- (c) 不作为主路径，但 JSON Prompt 格式会保留 `userHints` 字段，允许用户手动写 `data-component` 兜底。
+**决策（Phase 2 终版）**：
 
-**Phase 1 已落地的证据**：
-- `tools/babel-plugin-paperx-uid/index.js`：JSX visitor、`uidFor(file, line, col, tag)` SHA1 截前 10 位、对小写 host 元素插入 `data-paperx-uid` attribute，跳过组件元素（首字母大写的 JSX）
-- `tools/babel-plugin-paperx-uid/README.md`：说明 Phase 2 接入方式
+- 属性名固定 `data-uid`（不加 `paperx-` 前缀——避免污染用户 attribute 命名空间，也尊重项目方的既有约定）
+- 没有 fallback 机制（不写 Fiber 反查、不写 babel plugin、不约定 userHints）
+- 元素无 `data-uid` 时：JSON Prompt 仍输出 `selector + tagName`，AI 自己用 selector 定位（降级路径，不是主路径）
+- paperx 自身 zero 编译期工具——任何"为了让 AI 改源码而写的源码工具"都是过度设计
 
-**Phase 2 路线**：
-1. Babel plugin 单测覆盖（fragment、namespaced JSX、已有 attribute 等 corner case）
-2. paperx 运行时：从 DOM 节点 → 找最近祖先含 `data-paperx-uid` → 解析 uid → 在 JSON Prompt 输出 `{ uid, file, line, component }`
-3. Fiber fallback：实现 `findFiber(domNode)` 沿 `__reactFiber$xxx` 遍历，读 `_debugSource`
+**理由**：
+1. 用户原始需求（owner 表态）："我的项目工程会自动给每个 dom 元素标注了 data-uid，浏览器插件的作用是把这些 data-uid 的改动收集起来"——paperx 要做减法，不是加法
+2. 项目方有完全自由度选标签注入方案：自家 babel plugin / swc plugin / framework 自带（如 Astro、Solid 都有类似机制）/ 手工标注，paperx 都接得上
+3. 不绑死任何打标实现，不与上游工程深度耦合，paperx 维护边界清晰
+
+**落地（Phase 2 完成项）**：
+- `src/shared/types/changes.ts` 的 `readDataUid(el)` helper：单行 `el.getAttribute('data-uid')`
+- `SelectionStore.selectedDataUid` computed：直接读属性，无 fallback
+- JSON Prompt schema：`PaperxPromptTarget.dataUid: string | null`，null 时 AI 走 selector
+- 不再保留 `tools/babel-plugin-paperx-uid/` 目录（已 Phase 2 移除）
 
 ### R3. visBug 集成形态
 

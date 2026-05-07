@@ -1,8 +1,0 @@
-{
-  "name": "babel-plugin-paperx-uid",
-  "version": "0.0.0-stub",
-  "description": "Compile-time data-paperx-uid injector — Phase 1 stub.",
-  "main": "index.js",
-  "private": true,
-  "license": "MIT"
-}
