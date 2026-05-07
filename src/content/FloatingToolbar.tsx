@@ -36,6 +36,7 @@ import { TYPES } from '@/shared/di/tokens';
 import { ElementPicker } from './picker/ElementPicker';
 import { HoverTooltip } from './overlays/HoverTooltip';
 import { ViewportRulers } from './overlays/ViewportRulers';
+import { ResizeHandles } from './overlays/ResizeHandles';
 import { DesignPanel } from './panels/design';
 import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
@@ -147,6 +148,7 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <ElementPicker uiStore={store} selectionStore={selectionStore} />
       <HoverTooltip uiStore={store} selectionStore={selectionStore} />
       <ViewportRulers uiStore={store} selectionStore={selectionStore} />
+      <ResizeHandles uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <RulerPanel uiStore={store} selectionStore={selectionStore} />
       <CommentPanel

@@ -265,6 +265,62 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
+  test('design mode resize handles drag SE corner → width+height edits in ChangeLog', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      // 8 handles must be present once the element is selected.
+      await expect(page.locator('[data-testid="paperx-resize-se"]')).toBeVisible({ timeout: 5_000 });
+      for (const h of ['nw', 'n', 'ne', 'e', 's', 'sw', 'w'] as const) {
+        await expect(page.locator(`[data-testid="paperx-resize-${h}"]`)).toBeVisible();
+      }
+
+      const startBox = await target.boundingBox();
+      expect(startBox).not.toBeNull();
+      const handle = page.locator('[data-testid="paperx-resize-se"]');
+      const handleBox = await handle.boundingBox();
+      expect(handleBox).not.toBeNull();
+
+      // Drag SE corner +40px in both dimensions.
+      const startX = handleBox!.x + handleBox!.width / 2;
+      const startY = handleBox!.y + handleBox!.height / 2;
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      await page.mouse.move(startX + 20, startY + 20, { steps: 5 });
+      await page.mouse.move(startX + 40, startY + 40, { steps: 10 });
+      await page.mouse.up();
+
+      // Live preview is reverted on mouseup; final inline width/height
+      // must be set via StyleEditService.apply, leaving them as
+      // explicit pixel strings.
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => {
+              const s = (el as HTMLElement).style;
+              return { w: s.width, h: s.height };
+            }),
+          { timeout: 5_000 },
+        )
+        .toMatchObject({ w: /\d+px/, h: /\d+px/ });
+
+      // ChangeLog drawer should now carry both width and height rows.
+      await page.locator('[data-testid="paperx-history"]').click();
+      const rows = page.locator('paperx-root [role="row"]');
+      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+      const rowsText = await rows.allInnerTexts();
+      expect(rowsText.some((t) => t.includes('width'))).toBe(true);
+      expect(rowsText.some((t) => t.includes('height'))).toBe(true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
   test('ruler mode renders top + left viewport rulers with pixel labels', async () => {
     const ctx = await launchWithExtension();
     try {
