@@ -85,12 +85,22 @@ export const LayoutPanel = observer(
       setGapDraft(csGap);
     }, [csGap, target]);
 
+    // Local display draft so the panel re-renders when the user clicks a
+    // display button. styleEdit.apply mutates inline style directly but
+    // window.getComputedStyle reads aren't MobX-observable, so without a
+    // local state there'd be no signal to re-mount Flex/Grid sub-panels.
+    const csDisplay = target
+      ? coerceDisplay(window.getComputedStyle(target).display)
+      : 'block';
+    const [display, setDisplay] = React.useState<DisplayValue>(csDisplay);
+    React.useEffect(() => {
+      setDisplay(csDisplay);
+    }, [csDisplay, target]);
+
     const visible =
       uiStore.visible && uiStore.mode === 'layout' && target != null;
     if (!visible || !target) return null;
 
-    const cs = window.getComputedStyle(target);
-    const display = coerceDisplay(cs.display);
     const isFlexLike = display === 'flex' || display === 'inline-flex';
     const isGridLike = display === 'grid' || display === 'inline-grid';
 
@@ -124,7 +134,10 @@ export const LayoutPanel = observer(
                   key={opt}
                   variant={active ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => styleEdit.apply(target, 'display', opt)}
+                  onClick={() => {
+                    setDisplay(opt);
+                    styleEdit.apply(target, 'display', opt);
+                  }}
                   className="h-6 px-2 text-[10px]"
                   data-testid={`paperx-layout-display-${opt}`}
                 >
