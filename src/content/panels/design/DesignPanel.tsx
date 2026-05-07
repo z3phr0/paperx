@@ -61,7 +61,7 @@ export const DesignPanel = observer(({ uiStore, selectionStore, styleEdit }: Pro
       style={{
         top: '56px',
         bottom: '16px',
-        width: '280px',
+        width: '400px',
       }}
       // Stop host-page hotkeys / picker click handlers from firing while
       // the user interacts with our inputs. We don't preventDefault — the

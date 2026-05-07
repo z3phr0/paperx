@@ -32,8 +32,14 @@ import { ChangeLogRow } from './ChangeLogRow';
 
 const COLLAPSED_HEIGHT = 40;
 const EXPANDED_HEIGHT = 280;
-const DESIGN_PANEL_WIDTH = 280;
+const SIDE_PANEL_WIDTH = 400;
 const PANEL_GUTTER = 8;
+const SIDE_PANEL_MODES: ReadonlySet<string> = new Set([
+  'design',
+  'layout',
+  'ruler',
+  'comment',
+]);
 
 export interface ChangeLogDrawerProps {
   uiStore: UIStore;
@@ -58,10 +64,10 @@ export const ChangeLogDrawer = observer(
     const isOpen = changeLogUIStore.drawerOpen;
     const records = changeLogUIStore.filteredRecords;
 
-    const designPanelVisible =
-      uiStore.mode === 'design' && selectionStore.selected != null;
-    const rightOffset = designPanelVisible
-      ? 16 + DESIGN_PANEL_WIDTH + PANEL_GUTTER
+    const sidePanelVisible =
+      SIDE_PANEL_MODES.has(uiStore.mode) && selectionStore.selected != null;
+    const rightOffset = sidePanelVisible
+      ? 16 + SIDE_PANEL_WIDTH + PANEL_GUTTER
       : 16;
 
     const containerStyle: React.CSSProperties = {

@@ -109,7 +109,7 @@ export const LayoutPanel = observer(
         role="complementary"
         aria-label="paperx layout panel"
         data-testid="paperx-layout-panel"
-        className="paperx-surface fixed right-4 top-14 bottom-4 z-[2147483640] w-[280px] overflow-y-auto rounded-lg p-2"
+        className="paperx-surface fixed right-4 top-14 bottom-4 z-[2147483640] w-[400px] overflow-y-auto rounded-lg p-2"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
