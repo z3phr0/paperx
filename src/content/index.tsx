@@ -25,6 +25,7 @@ import { TYPES } from '@/shared/di/tokens';
 import { UIStore } from '@/shared/stores/UIStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { PAPERX_TOGGLE, type PaperxMessage } from '@/shared/types/messages';
+import { PortalProvider } from '@/shared/ui/portal';
 
 const HOST_TAG = 'paperx-root';
 
@@ -58,6 +59,23 @@ function mount(): MountResult {
   reactMount.id = 'paperx-react-root';
   shadow.appendChild(reactMount);
 
+  // Sibling layer for Radix Portal targets (Popover/Dialog/Tooltip/...).
+  // Radix's Portal accepts an HTMLElement, not a ShadowRoot — and we want
+  // the portaled overlays to live INSIDE the shadow tree so the same
+  // injected stylesheet applies and host-page CSS cannot bleed in.
+  const portalLayer = document.createElement('div');
+  portalLayer.id = 'paperx-portal-layer';
+  // Position it absolutely so it never displaces the React tree. Radix
+  // overlays compute their own coordinates via Floating UI.
+  // Overlays painted into this layer must visually sit above the floating
+  // toolbar (which uses the int32-max z-index). We match it and rely on
+  // DOM order — portalLayer is appended after reactMount so ties resolve
+  // in our favor. The layer itself is pointer-events:none; Radix overlay
+  // children re-enable pointer events on themselves.
+  portalLayer.style.cssText =
+    'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
+  shadow.appendChild(portalLayer);
+
   // DI bootstrap.
   const container = getContainer();
   const store = container.get<UIStore>(TYPES.UIStore);
@@ -65,7 +83,9 @@ function mount(): MountResult {
   const root = createRoot(reactMount);
   root.render(
     <React.StrictMode>
-      <FloatingToolbar store={store} />
+      <PortalProvider container={portalLayer}>
+        <FloatingToolbar store={store} />
+      </PortalProvider>
     </React.StrictMode>,
   );
 
