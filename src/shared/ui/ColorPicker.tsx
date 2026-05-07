@@ -169,6 +169,21 @@ const REACT_COLORFUL_CSS = `
 .react-colorful__hue-pointer{z-index:2}
 `;
 
+// ---------------------------------------------------------------------------
+// Dark frosted-glass overrides (P8-D)
+// ---------------------------------------------------------------------------
+//
+// These overrides live in a SEPARATE <style> block so REACT_COLORFUL_CSS
+// stays a verbatim copy of the upstream library CSS (the project explicitly
+// guards against modifying that constant). The overrides target the same
+// classes but only the colour-only / border-only properties so geometry
+// stays identical.
+const PAPERX_COLORFUL_DARK_CSS = `
+.react-colorful__saturation{border-bottom-color:rgba(255,255,255,0.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+.react-colorful__alpha-gradient{box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+.react-colorful__pointer{border-color:rgba(255,255,255,0.95);box-shadow:0 2px 6px rgba(0,0,0,0.55)}
+`;
+
 // Transparent checkerboard for the trigger swatch when value is empty.
 const CHECKER_BG =
   "url(\"data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><rect width='6' height='6' fill='%23ccc'/><rect x='6' y='6' width='6' height='6' fill='%23ccc'/></svg>\")";
@@ -270,10 +285,11 @@ export function ColorPicker({
       <Popover.Trigger asChild disabled={disabled}>
         <button
           type="button"
+          data-testid="paperx-color-trigger"
           aria-label={ariaLabel ?? 'Pick color'}
           className={cn(
-            'relative h-6 w-6 shrink-0 rounded-sm border border-input',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'relative h-6 w-6 shrink-0 rounded-sm border border-white/20',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
             'disabled:cursor-not-allowed disabled:opacity-50',
           )}
           style={{
@@ -293,9 +309,10 @@ export function ColorPicker({
         <Popover.Content
           sideOffset={8}
           align="start"
+          data-testid="paperx-color-popover"
           className={cn(
-            'z-[2147483647] w-[232px] rounded-lg border bg-background p-3 shadow-md',
-            'text-foreground outline-none',
+            'paperx-surface',
+            'z-[2147483647] w-[232px] rounded-lg p-3 shadow-xl outline-none',
           )}
           // Stop propagation so DesignPanel's onClick / onKeyDown handlers
           // (which stop host-page hotkeys) don't double-run.
@@ -305,13 +322,15 @@ export function ColorPicker({
         >
           {/* react-colorful CSS, scoped into the shadow tree via this node. */}
           <style>{REACT_COLORFUL_CSS}</style>
+          {/* Dark-theme overrides — kept separate from the verbatim library CSS. */}
+          <style>{PAPERX_COLORFUL_DARK_CSS}</style>
           <HexColorPicker
             color={draftHex}
             onChange={handleDrag}
             style={{ width: '100%', height: '160px' }}
           />
           <div className="mt-2 flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">#</span>
+            <span className="text-xs text-white/60">#</span>
             <HexColorInput
               color={draftHex.replace(/^#/, '')}
               onChange={(raw) => {
@@ -326,15 +345,15 @@ export function ColorPicker({
                 }
               }}
               className={cn(
-                'flex h-7 w-full rounded-sm border border-input bg-background px-2 py-1 text-xs',
-                'placeholder:text-muted-foreground',
-                'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                'flex h-7 w-full rounded-sm border border-white/20 bg-white/5 px-2 py-1 text-xs text-white',
+                'placeholder:text-white/40',
+                'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40',
               )}
             />
           </div>
           {recents.length > 0 && (
             <div className="mt-2">
-              <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-white/50">
                 Recent
               </div>
               <div className="grid grid-cols-4 gap-1">
@@ -342,11 +361,12 @@ export function ColorPicker({
                   <button
                     key={`${c}-${i}`}
                     type="button"
+                    data-testid={`paperx-color-recent-${i}`}
                     aria-label={`Apply ${c}`}
                     onClick={() => commit(c)}
                     className={cn(
-                      'h-5 w-full rounded-sm border border-input',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'h-5 w-full rounded-sm border border-white/20',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
                     )}
                     style={{ backgroundColor: c }}
                   />
