@@ -31,6 +31,7 @@ import type { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { buildSelector } from '@/shared/types/changes';
+import { pxToInt } from '@/shared/types/numeric';
 
 import { FlexControls } from './sections/FlexControls';
 import { GridControls } from './sections/GridControls';
@@ -79,7 +80,9 @@ export const LayoutPanel = observer(
     // Hook order MUST stay stable across renders, so call hooks before
     // any early return. Target may be null; reads use a `'0px'` default.
     const target = selectionStore.selected;
-    const csGap = target ? window.getComputedStyle(target).gap || '0px' : '0px';
+    const csGap = target
+      ? pxToInt(window.getComputedStyle(target).gap || '0') || '0'
+      : '0';
     const [gapDraft, setGapDraft] = React.useState(csGap);
     React.useEffect(() => {
       setGapDraft(csGap);

@@ -12,6 +12,7 @@ import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
 import { Select } from '@/shared/ui/Select';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
+import { pxToInt, formatLengthPx } from '@/shared/types/numeric';
 
 const DISPLAY_OPTIONS = [
   { value: 'block', label: 'block' },
@@ -71,11 +72,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
     [target],
   );
   const seedAlign = React.useMemo(() => read(target, 'align-items').trim() || 'stretch', [target]);
-  const seedGap = React.useMemo(() => {
-    const v = read(target, 'gap').trim();
-    const m = v.match(/^(-?[\d.]+)px$/);
-    return m && m[1] ? m[1] : '';
-  }, [target]);
+  const seedGap = React.useMemo(() => pxToInt(read(target, 'gap')), [target]);
 
   const [display, setDisplay] = React.useState(seedDisplay);
   const [direction, setDirection] = React.useState(seedDir);
@@ -156,8 +153,9 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
               value={gap}
               onChange={(e) => {
                 setGap(e.target.value);
-                if (e.target.value !== '') {
-                  styleEdit.apply(target, 'gap', `${parseFloat(e.target.value)}px`);
+                const formatted = formatLengthPx(e.target.value);
+                if (formatted != null) {
+                  styleEdit.apply(target, 'gap', formatted);
                 }
               }}
               className="flex-1"

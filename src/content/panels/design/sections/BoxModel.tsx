@@ -28,6 +28,7 @@ import { observer } from 'mobx-react-lite';
 
 import { Input } from '@/shared/ui/Input';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
+import { pxToInt, formatLengthPx } from '@/shared/types/numeric';
 
 type Side = 'top' | 'right' | 'bottom' | 'left';
 const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'] as const;
@@ -42,25 +43,9 @@ function read(target: HTMLElement, prop: string): string {
   }
 }
 
-function strip(raw: string): string {
-  // Strip trailing "px" so the input shows just the number (Figma-like).
-  if (!raw || raw === 'auto') return '';
-  const m = raw.match(/^(-?[\d.]+)px$/);
-  return m && m[1] ? m[1] : raw;
-}
-
-function formatLength(raw: string, allowNegative: boolean): string | null {
-  // Accept "16", "16px", "1rem", "auto". Empty → null (no commit).
-  const trimmed = raw.trim();
-  if (trimmed === '' || trimmed === '-') return null;
-  if (trimmed === 'auto') return 'auto';
-  // If it already has a unit suffix, pass through verbatim.
-  if (/[a-z%]+$/i.test(trimmed)) return trimmed;
-  const n = parseFloat(trimmed);
-  if (Number.isNaN(n)) return null;
-  if (!allowNegative && n < 0) return '0px';
-  return `${n}px`;
-}
+const strip = pxToInt;
+const formatLength = (raw: string, allowNegative: boolean) =>
+  formatLengthPx(raw, { allowNegative });
 
 interface Props {
   target: HTMLElement;

@@ -26,6 +26,7 @@ import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
 import { ColorPicker } from '@/shared/ui/ColorPicker';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
+import { roundPx } from '@/shared/types/numeric';
 
 const FONT_FAMILY_PRESETS = [
   'system-ui',
@@ -58,7 +59,10 @@ interface FieldProps {
 }
 
 const Field: React.FC<FieldProps> = ({ label, prop, target, styleEdit, type = 'text', list, className }) => {
-  const seed = React.useMemo(() => readComputed(target, prop).trim(), [target, prop]);
+  const seed = React.useMemo(
+    () => roundPx(readComputed(target, prop).trim()),
+    [target, prop],
+  );
   const [val, setVal] = React.useState(seed);
 
   React.useEffect(() => setVal(seed), [seed]);

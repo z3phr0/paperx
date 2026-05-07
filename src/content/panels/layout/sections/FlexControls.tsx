@@ -32,6 +32,7 @@ import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
 import { Segmented, type SegmentedOption } from '@/shared/ui/Segmented';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
+import { formatLengthPx } from '@/shared/types/numeric';
 
 interface Props {
   target: HTMLElement;
@@ -256,7 +257,10 @@ export function FlexControls({ target, styleEdit, gap, setGap }: Props): React.R
           type="text"
           value={gap}
           onChange={(e) => setGap(e.target.value)}
-          onBlur={() => apply('gap', gap)}
+          onBlur={() => {
+            const formatted = formatLengthPx(gap);
+            if (formatted != null) apply('gap', formatted);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           }}
