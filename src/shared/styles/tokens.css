@@ -1,0 +1,20 @@
+/*
+ * paperx design tokens — HSL values consumed by tailwind.config.ts theme.
+ * Light theme defaults; dark mode lands in Phase 2.
+ */
+:host {
+  --paperx-background: 0 0% 100%;
+  --paperx-foreground: 222 47% 11%;
+  --paperx-border: 214 32% 91%;
+  --paperx-input: 214 32% 91%;
+  --paperx-ring: 222 84% 50%;
+  --paperx-primary: 222 47% 11%;
+  --paperx-primary-foreground: 210 40% 98%;
+  --paperx-secondary: 210 40% 96%;
+  --paperx-secondary-foreground: 222 47% 11%;
+  --paperx-muted: 210 40% 96%;
+  --paperx-muted-foreground: 215 16% 47%;
+  --paperx-accent: 210 40% 96%;
+  --paperx-accent-foreground: 222 47% 11%;
+  --paperx-radius: 0.5rem;
+}

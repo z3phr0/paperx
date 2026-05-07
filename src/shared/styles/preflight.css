@@ -1,0 +1,54 @@
+/*
+ * paperx scoped reset — applied INSIDE the shadow root only.
+ *
+ * We disabled tailwind's global preflight (tailwind.config.ts
+ * corePlugins.preflight=false) to avoid bleeding styles into host pages.
+ * Instead, we re-establish a *minimal* normalization here, scoped via
+ * :host so it cannot escape the shadow boundary.
+ */
+
+:host {
+  /* Reset inheritance from host page. `all: initial` is the nuclear
+     option — every property goes to its initial value. We then re-set
+     the few inheritable ones we want for our UI. */
+  all: initial;
+  display: block;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--paperx-foreground));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border: 0 solid hsl(var(--paperx-border));
+}
+
+button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}

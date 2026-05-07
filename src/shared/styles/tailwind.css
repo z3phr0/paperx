@@ -1,0 +1,10 @@
+/*
+ * Tailwind entry consumed by the content script. Note we deliberately
+ * skip @tailwind base because preflight is disabled globally; our scoped
+ * reset (preflight.css) handles minimal normalization inside :host.
+ */
+@import './tokens.css';
+@import './preflight.css';
+
+@tailwind components;
+@tailwind utilities;
