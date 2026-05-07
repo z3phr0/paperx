@@ -7,4 +7,6 @@
 export const TYPES = {
   UIStore: Symbol.for('paperx.UIStore'),
   ChangeLogService: Symbol.for('paperx.ChangeLogService'),
+  SelectionStore: Symbol.for('paperx.SelectionStore'),
+  StyleEditService: Symbol.for('paperx.StyleEditService'),
 } as const;
