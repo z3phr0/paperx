@@ -116,6 +116,7 @@ export const ChangeLogHeader = observer(
           onClick={handleExport}
           disabled={total === 0}
           title="Build paperx-prompt-v1 and copy to clipboard"
+          data-testid="paperx-export-prompt"
           className="h-7 px-2"
         >
           {copyStatus === 'ok' ? (

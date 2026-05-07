@@ -60,6 +60,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
     <div
       role="toolbar"
       aria-label="paperx toolbar"
+      data-testid="paperx-toolbar"
       className="fixed right-6 top-6 z-[2147483647] flex items-center gap-1 rounded-full border bg-background p-1 shadow-lg"
       // Defensive: any click on the toolbar must not be hijacked by the
       // picker's window-level click listener (capture phase).
@@ -77,6 +78,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
             aria-pressed={active}
             aria-label={TOOL_MODE_LABELS[m]}
             title={TOOL_MODE_LABELS[m]}
+            data-testid={`paperx-mode-${m}`}
             onClick={() => store.setMode(m)}
             className={cn('rounded-full')}
           >
@@ -94,6 +96,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
         aria-pressed={drawerOpen}
         aria-label="Toggle change log"
         title={`Change log (${recordCount})`}
+        data-testid="paperx-history"
         onClick={() => changeLogUIStore.toggleDrawer()}
         className="relative rounded-full"
       >
@@ -110,6 +113,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
         size="icon"
         aria-label="Close paperx"
         title="Hide (Cmd+Shift+P)"
+        data-testid="paperx-close"
         onClick={() => store.hide()}
         className="rounded-full"
       >
