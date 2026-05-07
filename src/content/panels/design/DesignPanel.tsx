@@ -61,7 +61,7 @@ export const DesignPanel = observer(({ uiStore, selectionStore, styleEdit }: Pro
     <div
       role="region"
       aria-label="paperx design panel"
-      className="paperx-surface fixed right-4 z-[2147483646] flex flex-col gap-2 overflow-hidden rounded-lg p-2 shadow-xl"
+      className="paperx-surface fixed right-4 z-[2147483646] flex flex-col gap-2 overflow-hidden rounded-lg p-2"
       style={{
         top: '56px',
         bottom: '16px',

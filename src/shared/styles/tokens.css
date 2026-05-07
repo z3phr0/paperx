@@ -18,8 +18,9 @@
   --paperx-accent-foreground: 0 0% 96%;
   --paperx-radius: 0.5rem;
   --paperx-glass-bg: 0 0% 9%;
-  --paperx-glass-border: 0 0% 18%;
-  --paperx-glass-blur: 12px;
-  --paperx-glass-alpha: 0.92;
-  --paperx-glass-border-alpha: 0.6;
+  --paperx-glass-border: 0 0% 100%;
+  --paperx-glass-blur: 20px;
+  --paperx-glass-saturate: 180%;
+  --paperx-glass-alpha: 0.75;
+  --paperx-glass-border-alpha: 0.12;
 }

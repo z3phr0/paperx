@@ -11,10 +11,14 @@
 @layer components {
   .paperx-surface {
     background-color: hsl(var(--paperx-glass-bg) / var(--paperx-glass-alpha));
-    backdrop-filter: blur(var(--paperx-glass-blur));
-    -webkit-backdrop-filter: blur(var(--paperx-glass-blur));
+    backdrop-filter: blur(var(--paperx-glass-blur)) saturate(var(--paperx-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--paperx-glass-blur)) saturate(var(--paperx-glass-saturate));
     border: 1px solid hsl(var(--paperx-glass-border) / var(--paperx-glass-border-alpha));
     color: hsl(var(--paperx-foreground));
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
+      0 1px 0 0 hsl(0 0% 0% / 0.4),
+      0 12px 32px -8px hsl(0 0% 0% / 0.5);
   }
 }
 

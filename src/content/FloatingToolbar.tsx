@@ -71,7 +71,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
       role="toolbar"
       aria-label="paperx toolbar"
       data-testid="paperx-toolbar"
-      className="paperx-surface fixed right-6 top-6 z-[2147483647] flex items-center gap-1 rounded-full p-1 shadow-lg"
+      className="paperx-surface fixed right-6 top-6 z-[2147483647] flex items-center gap-1 rounded-full p-1"
       // Defensive: any click on the toolbar must not be hijacked by the
       // picker's window-level click listener (capture phase).
       onMouseDown={(e) => e.stopPropagation()}
