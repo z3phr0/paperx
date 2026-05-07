@@ -7,4 +7,15 @@
 @import './preflight.css';
 
 @tailwind components;
+
+@layer components {
+  .paperx-surface {
+    background-color: hsl(var(--paperx-glass-bg) / var(--paperx-glass-alpha));
+    backdrop-filter: blur(var(--paperx-glass-blur));
+    -webkit-backdrop-filter: blur(var(--paperx-glass-blur));
+    border: 1px solid hsl(var(--paperx-glass-border) / var(--paperx-glass-border-alpha));
+    color: hsl(var(--paperx-foreground));
+  }
+}
+
 @tailwind utilities;

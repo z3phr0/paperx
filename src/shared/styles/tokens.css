@@ -4,7 +4,7 @@
  */
 :host {
   --paperx-background: 0 0% 100%;
-  --paperx-foreground: 222 47% 11%;
+  --paperx-foreground: 0 0% 96%;
   --paperx-border: 214 32% 91%;
   --paperx-input: 214 32% 91%;
   --paperx-ring: 222 84% 50%;
@@ -13,8 +13,13 @@
   --paperx-secondary: 210 40% 96%;
   --paperx-secondary-foreground: 222 47% 11%;
   --paperx-muted: 210 40% 96%;
-  --paperx-muted-foreground: 215 16% 47%;
+  --paperx-muted-foreground: 0 0% 62%;
   --paperx-accent: 210 40% 96%;
   --paperx-accent-foreground: 222 47% 11%;
   --paperx-radius: 0.5rem;
+  --paperx-glass-bg: 0 0% 9%;
+  --paperx-glass-border: 0 0% 18%;
+  --paperx-glass-blur: 12px;
+  --paperx-glass-alpha: 0.92;
+  --paperx-glass-border-alpha: 0.6;
 }
