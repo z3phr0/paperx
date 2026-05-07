@@ -10,19 +10,24 @@
  *   - <ElementPicker /> — DOM hit-test active when mode === 'design'
  *   - <DesignPanel />   — right-side drawer for inline-style edits
  *
- * Both sub-components are siblings of the toolbar pill (NOT nested inside
- * it) so they can position themselves freely. The toolbar takes its
- * dependencies via the DI container — same UIStore instance as before,
- * plus the new SelectionStore + StyleEditService.
+ * S2-A adds the change-log drawer:
+ *   - History icon button on the toolbar pill toggles drawer visibility;
+ *     a small red indicator shows when the ChangeLog has any records.
+ *   - <ChangeLog /> renders as a sibling of the toolbar pill (NOT nested
+ *     inside it) so it can position itself freely at the viewport bottom.
+ *
+ * The toolbar takes its dependencies via the DI container — same UIStore
+ * instance as before, plus the Phase 2 stores resolved lazily here.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Pencil, Ruler, MessageSquare, LayoutGrid, X } from 'lucide-react';
+import { Pencil, Ruler, MessageSquare, LayoutGrid, X, History } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
 import { UIStore } from '@/shared/stores/UIStore';
 import { SelectionStore } from '@/shared/stores/SelectionStore';
+import { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { TOOL_MODES, TOOL_MODE_LABELS, type ToolMode } from '@/shared/types/modes';
 import { getContainer } from '@/shared/di/container';
@@ -30,6 +35,7 @@ import { TYPES } from '@/shared/di/tokens';
 
 import { ElementPicker } from './picker/ElementPicker';
 import { DesignPanel } from './panels/design';
+import { ChangeLog } from './panels/changelog';
 
 const MODE_ICONS: Record<ToolMode, React.ComponentType<{ className?: string }>> = {
   design: Pencil,
@@ -42,8 +48,14 @@ interface Props {
   store: UIStore;
 }
 
-const ToolbarPill = observer(({ store }: Props) => {
+interface ToolbarPillProps extends Props {
+  changeLogUIStore: ChangeLogUIStore;
+}
+
+const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => {
   if (!store.visible) return null;
+  const recordCount = changeLogUIStore.totalCount;
+  const drawerOpen = changeLogUIStore.drawerOpen;
   return (
     <div
       role="toolbar"
@@ -73,6 +85,26 @@ const ToolbarPill = observer(({ store }: Props) => {
         );
       })}
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      {/* S2-A: change-log drawer toggle. Button shows an indicator dot
+          when there is at least one recorded change so the user is
+          nudged toward export even if the drawer is collapsed. */}
+      <Button
+        variant={drawerOpen ? 'default' : 'ghost'}
+        size="icon"
+        aria-pressed={drawerOpen}
+        aria-label="Toggle change log"
+        title={`Change log (${recordCount})`}
+        onClick={() => changeLogUIStore.toggleDrawer()}
+        className="relative rounded-full"
+      >
+        <History className="h-4 w-4" />
+        {recordCount > 0 && (
+          <span
+            aria-hidden
+            className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-background"
+          />
+        )}
+      </Button>
       <Button
         variant="ghost"
         size="icon"
@@ -96,12 +128,14 @@ export const FloatingToolbar = observer(({ store }: Props) => {
   const container = getContainer();
   const selectionStore = container.get<SelectionStore>(TYPES.SelectionStore);
   const styleEdit = container.get<IStyleEditService>(TYPES.StyleEditService);
+  const changeLogUIStore = container.get<ChangeLogUIStore>(TYPES.ChangeLogUIStore);
 
   return (
     <>
-      <ToolbarPill store={store} />
+      <ToolbarPill store={store} changeLogUIStore={changeLogUIStore} />
       <ElementPicker uiStore={store} selectionStore={selectionStore} />
       <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
+      <ChangeLog uiStore={store} />
     </>
   );
 });
