@@ -11,4 +11,5 @@ export const TYPES = {
   StyleEditService: Symbol.for('paperx.StyleEditService'),
   ChangeLogUIStore: Symbol.for('paperx.ChangeLogUIStore'),
   JsonPromptExporter: Symbol.for('paperx.JsonPromptExporter'),
+  CommentStore: Symbol.for('paperx.CommentStore'),
 } as const;

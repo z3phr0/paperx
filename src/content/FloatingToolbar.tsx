@@ -35,7 +35,11 @@ import { TYPES } from '@/shared/di/tokens';
 
 import { ElementPicker } from './picker/ElementPicker';
 import { DesignPanel } from './panels/design';
+import { RulerPanel } from './panels/ruler';
+import { CommentPanel } from './panels/comment';
+import { LayoutPanel } from './panels/layout';
 import { ChangeLog } from './panels/changelog';
+import { CommentStore } from '@/shared/stores/CommentStore';
 
 const MODE_ICONS: Record<ToolMode, React.ComponentType<{ className?: string }>> = {
   design: Pencil,
@@ -133,12 +137,20 @@ export const FloatingToolbar = observer(({ store }: Props) => {
   const selectionStore = container.get<SelectionStore>(TYPES.SelectionStore);
   const styleEdit = container.get<IStyleEditService>(TYPES.StyleEditService);
   const changeLogUIStore = container.get<ChangeLogUIStore>(TYPES.ChangeLogUIStore);
+  const commentStore = container.get<CommentStore>(TYPES.CommentStore);
 
   return (
     <>
       <ToolbarPill store={store} changeLogUIStore={changeLogUIStore} />
       <ElementPicker uiStore={store} selectionStore={selectionStore} />
       <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
+      <RulerPanel uiStore={store} selectionStore={selectionStore} />
+      <CommentPanel
+        uiStore={store}
+        selectionStore={selectionStore}
+        commentStore={commentStore}
+      />
+      <LayoutPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <ChangeLog uiStore={store} />
     </>
   );

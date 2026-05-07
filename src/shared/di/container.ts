@@ -12,6 +12,7 @@ import { TYPES } from './tokens';
 import { UIStore } from '@/shared/stores/UIStore';
 import { SelectionStore } from '@/shared/stores/SelectionStore';
 import { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
+import { CommentStore } from '@/shared/stores/CommentStore';
 import {
   ChangeLogService,
   type IChangeLogService,
@@ -47,6 +48,10 @@ export function createContainer(): Container {
   container
     .bind<IJsonPromptExporter>(TYPES.JsonPromptExporter)
     .to(JsonPromptExporter)
+    .inSingletonScope();
+  container
+    .bind<CommentStore>(TYPES.CommentStore)
+    .to(CommentStore)
     .inSingletonScope();
   return container;
 }
