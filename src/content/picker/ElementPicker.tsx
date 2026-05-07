@@ -1,10 +1,12 @@
 /**
- * ElementPicker — design-mode DOM hit-tester.
+ * ElementPicker — DOM hit-tester used by every interactive mode
+ * (design / ruler / comment / layout) since they all need the user
+ * to point at a host-page element.
  *
  * Lifecycle:
- *   - Active iff `UIStore.visible && UIStore.mode === 'design'`. Mode
- *     change auto-detaches listeners and clears SelectionStore via the
- *     cleanup effect.
+ *   - Active iff `UIStore.visible`. Closing paperx (× button) is the
+ *     only way to free up host-page click handling. Mode switches do
+ *     NOT detach the picker — they just swap the side panel.
  *   - mousemove → elementFromPoint → SelectionStore.hover (rAF coalesced)
  *   - click     → SelectionStore.select; preventDefault + stopPropagation
  *                 so we don't trigger host-page handlers (e.g. <a> nav)
@@ -56,7 +58,7 @@ function asHostPageElement(el: Element | null): HTMLElement | null {
 }
 
 export const ElementPicker = observer(({ uiStore, selectionStore }: Props) => {
-  const active = uiStore.visible && uiStore.mode === 'design';
+  const active = uiStore.visible;
   const selected = selectionStore.selected;
 
   // Window-scoped listeners: hover, click, esc, scroll, resize.
