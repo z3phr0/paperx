@@ -265,6 +265,32 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
+  test('ruler mode renders top + left viewport rulers with pixel labels', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-ruler"]').click();
+
+      const top = page.locator('[data-testid="paperx-ruler-top"]');
+      const left = page.locator('[data-testid="paperx-ruler-left"]');
+      await expect(top).toBeVisible({ timeout: 5_000 });
+      await expect(left).toBeVisible();
+
+      // Major-tick labels: 100 must be present in both rulers since the
+      // sanity viewport is 1280x800.
+      await expect(top.getByText('100', { exact: true })).toBeVisible();
+      await expect(left.getByText('100', { exact: true })).toBeVisible();
+
+      // Switching out of ruler mode should hide the rulers entirely.
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      await expect(top).toBeHidden();
+      await expect(left).toBeHidden();
+    } finally {
+      await ctx.close();
+    }
+  });
+
   test('hover tooltip shows tag + dimensions for the hovered element', async () => {
     const ctx = await launchWithExtension();
     try {
