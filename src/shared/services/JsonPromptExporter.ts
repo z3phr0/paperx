@@ -1,127 +1,109 @@
 /**
- * JsonPromptExporter — turns the ChangeLog into a Claude-Code-ready
- * prompt payload (paperx-prompt-v1).
+ * JsonPromptExporter — turn the canonical ChangeLog into a paperx
+ * Prompt v1 JSON document and copy it to the clipboard.
  *
- * Responsibilities:
- *   1. Aggregate flat ChangeRecord[] → PaperxPromptTarget[] keyed by selector.
- *   2. Stamp meta (page url, title, paperx version, UA, counts).
- *   3. Render a human-readable preamble + fenced JSON via buildPromptText.
- *   4. Copy to clipboard with a Shadow-DOM-friendly fallback.
+ * Aggregation algorithm (mirrors src/shared/types/prompt.ts contract):
+ *   1. Iterate ChangeLog in append order (== chronological, since
+ *      StyleEditService is the single writer).
+ *   2. Group records by `(readDataUid(target) ?? selector)`. uid
+ *      wins when present; selector is the stable fallback.
+ *   3. Within a group, collapse multi-edits of the same property
+ *      into one change: keep the FIRST recorded `before` (user's
+ *      original value) and the LAST recorded `after` (current
+ *      value). Drop entries that net out to a noop
+ *      (`first.before === last.after`).
+ *   4. Emit `summary` block + `meta` block. `meta.pageUrl` falls
+ *      back to empty string in non-DOM smoke environments.
  *
- * Decoupling notes:
- *   - We accept records via `PromptSourceRecord[]` (structural type) so
- *     the smoke harness can drive the exporter without instantiating the
- *     full DI container or mocking Inversify decorators.
- *   - When called via DI, the optional argument falls back to
- *     `changeLogService.list()` so production callers never have to
- *     thread the records list explicitly.
- *   - `paperxVersion` is read from the build-time injected
- *     `import.meta.env` if available; falls back to '0.1.0' (matches
- *     package.json#version at the time of S2-A authorship).
+ * Clipboard strategy: prefer `navigator.clipboard.writeText`
+ * (supported in MV3 content scripts inside a user gesture — and our
+ * callers are button onClick handlers, which qualify). Fallback to
+ * a synthetic `<textarea>` + `document.execCommand('copy')` for old
+ * hosts. Both paths are best-effort; failure surfaces as a
+ * structured `ExportResult`, never an exception.
+ *
+ * Backwards-compatibility shim: the legacy `buildPrompt` /
+ * `buildPromptText` / `copyToClipboard` methods are kept as thin
+ * forwarders so any downstream test or script that imported them
+ * before S2-A landed keeps working. The new S2-A primary surface is
+ * `build` / `exportToClipboard`.
  */
 import { inject, injectable } from 'inversify';
 
 import { TYPES } from '@/shared/di/tokens';
-import type { IChangeLogService } from '@/shared/services/ChangeLogService';
+import {
+  type ChangeRecord,
+  type IChangeLogService,
+} from '@/shared/services/ChangeLogService';
+import { buildSelector, readDataUid } from '@/shared/types/changes';
+import type { ToolMode } from '@/shared/types/modes';
 import {
   PROMPT_SCHEMA_VERSION,
-  type PaperxPrompt,
   type PaperxPromptChange,
   type PaperxPromptTarget,
+  type PaperxPromptV1,
   type PromptSourceRecord,
 } from '@/shared/types/prompt';
 
+const PAPERX_VERSION = '0.1.0';
+
+const DEFAULT_INSTRUCTIONS = [
+  '你正在协助 paperx 完成可视化设计 → 源码同步。下面 `targets` 是用户在浏览器中可视化修改的 DOM 元素及其 CSS 变更。请：',
+  '(1) 用 `dataUid` 优先在源码中定位 React 组件（搜 `data-uid="<uid>"` 字符串）；如缺，用 `selector` 与 `tagName` 启发式定位。',
+  '(2) 对每个组件，把 `changes` 数组里的 CSS 变更同步到组件 className（优先 Tailwind）或 inline style/CSS 模块（按项目惯例）。',
+  '(3) `before` 是元素原值（可能是 computed style），`after` 是 paperx 写入的 inline style 值——你应当让组件本身在源码层面实现 `after`。',
+  '(4) v1 中 `appliedAs === "inline-style"`；v2 会加 `"tailwind"`。',
+].join('\n');
+
+export interface ExportOk {
+  ok: true;
+  promptSize: number;
+}
+
+export interface ExportErr {
+  ok: false;
+  error: string;
+}
+
+export type ExportResult = ExportOk | ExportErr;
+
 export interface IJsonPromptExporter {
-  /** Build the structured prompt object. Pass records to override the
-   *  ChangeLog (e.g. to export a filtered subset); omit to pull live. */
-  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPrompt;
-  /** Build the human-readable preamble + fenced JSON suitable for
-   *  pasting into Claude Code or any LLM chat. */
+  /** Build the v1 prompt object from the current ChangeLog state. */
+  build(): PaperxPromptV1;
+  /** Build + serialize + copy. User-gesture-safe; never throws. */
+  exportToClipboard(): Promise<ExportResult>;
+  /** @deprecated kept for compat; alias of `build()`. The optional
+   *  `records` lets old smoke harnesses inject synthetic input. */
+  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPromptV1;
+  /** @deprecated kept for compat; markdown-fenced version of build(). */
   buildPromptText(records?: readonly PromptSourceRecord[]): string;
-  /** Copy buildPromptText() to clipboard. Returns true on success.
-   *  `fallbackHost` is appended to during the textarea+execCommand
-   *  fallback path; pass the Shadow DOM portal layer when calling from
-   *  inside the content script so the textarea is not visible to the
-   *  host page. */
+  /**
+   * @deprecated kept for compat; boolean-result variant. The
+   * `fallbackHost` argument is honored by the legacy textarea fallback
+   * (Shadow-DOM portal layer hosts the temp textarea); the modern
+   * `exportToClipboard` path appends to `document.body` instead.
+   */
   copyToClipboard(
     records?: readonly PromptSourceRecord[],
     fallbackHost?: ParentNode,
   ): Promise<boolean>;
 }
 
-const INSTRUCTIONS = [
-  '你正在协助 paperx 完成可视化设计 → 源码同步。下面 `targets` 是用户在浏览器中可视化修改的 DOM 元素及其 CSS 变更。请：',
-  '(1) 用 `dataPaperxUid` 优先在源码中定位 React 组件（搜 `data-paperx-uid="<uid>"` 字符串）；如缺，用 `selector` 与 `tagName` 启发式定位。',
-  '(2) 对每个组件，把 `changes` 数组里的 CSS 变更同步到组件 className（优先 Tailwind）或 inline style/CSS 模块（按项目惯例）。',
-  '(3) `before` 是元素原值（可能是 computed style），`after` 是 paperx 写入的 inline style 值——你应当让组件本身在源码层面实现 `after`。',
-  '(4) `changes` 数组按 ts 升序，应用顺序与用户操作一致。同一 property 多次出现时，最后一次的 `after` 是最终态。',
-].join('\n');
-
-/** Read paperx package version from vite-injected env, with a stable
- *  fallback so node-side tests (no Vite) still produce valid output. */
-function readPaperxVersion(): string {
-  // import.meta.env is provided by Vite at build-time; in raw node it
-  // is undefined. Wrapped in try/catch so a tooling environment that
-  // doesn't permit `import.meta` doesn't blow up.
-  try {
-    const env = (import.meta as { env?: Record<string, string | undefined> })
-      .env;
-    return env?.PAPERX_VERSION ?? env?.VITE_PAPERX_VERSION ?? '0.1.0';
-  } catch {
-    return '0.1.0';
-  }
+interface PropFold {
+  first: ChangeRecord;
+  last: ChangeRecord;
 }
 
-/** Last segment of a `a > b > c` selector; tag name only (drop classes). */
-function deriveTagName(selector: string): string {
-  if (!selector) return 'unknown';
-  const tail = selector.split('>').pop()?.trim() ?? '';
-  if (!tail) return 'unknown';
-  const m = tail.match(/^[a-zA-Z][a-zA-Z0-9-]*/);
-  return m ? m[0].toLowerCase() : 'unknown';
-}
-
-function aggregateTargets(
-  records: readonly PromptSourceRecord[],
-): PaperxPromptTarget[] {
-  const map = new Map<string, PaperxPromptTarget>();
-  for (const r of records) {
-    let target = map.get(r.selector);
-    if (!target) {
-      target = {
-        selector: r.selector,
-        tagName: deriveTagName(r.selector),
-        changes: [],
-      };
-      if (r.dataPaperxUid !== undefined && r.dataPaperxUid !== null) {
-        target.dataPaperxUid = r.dataPaperxUid;
-      }
-      map.set(r.selector, target);
-    } else if (
-      target.dataPaperxUid === undefined &&
-      r.dataPaperxUid !== undefined &&
-      r.dataPaperxUid !== null
-    ) {
-      // Earlier records may have lacked uid; later one filled it in.
-      target.dataPaperxUid = r.dataPaperxUid;
-    }
-    const change: PaperxPromptChange = {
-      id: r.id,
-      ts: r.ts,
-      property: r.property,
-      before: r.before,
-      after: r.after,
-      mode: r.mode,
-    };
-    target.changes.push(change);
-  }
-  // Per-target: oldest → newest (application order).
-  for (const t of map.values()) {
-    t.changes.sort((a, b) => a.ts - b.ts);
-  }
-  // Targets order is insertion order (== first-seen). Stable enough for
-  // human review; consumers should not depend on it.
-  return Array.from(map.values());
+interface Group {
+  key: string;
+  /** First non-null element resolved across the group. */
+  element: HTMLElement | null;
+  /** Snapshot used as a selector fallback when `element` is GCed. */
+  sampleSelector: string;
+  /** Per-property fold (first-seen / last-seen records). */
+  perProp: Map<string, PropFold>;
+  /** Modes observed in this group. */
+  modes: Set<ToolMode>;
 }
 
 @injectable()
@@ -130,93 +112,303 @@ export class JsonPromptExporter implements IJsonPromptExporter {
     @inject(TYPES.ChangeLogService) private readonly log: IChangeLogService,
   ) {}
 
-  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPrompt {
-    const src: readonly PromptSourceRecord[] =
-      records ?? (this.log.list() as readonly PromptSourceRecord[]);
-    const targets = aggregateTargets(src);
-    const meta = this.buildMeta(src, targets.length);
-    return {
-      schema: PROMPT_SCHEMA_VERSION,
-      meta,
-      targets,
-      instructions: INSTRUCTIONS,
-    };
+  build(): PaperxPromptV1 {
+    return this.buildFrom(
+      this.log.list(),
+      (id) => this.log.getTargetById(id),
+    );
+  }
+
+  /**
+   * Legacy entry point used by the smoke harness — accepts either a
+   * synthetic record list or a structurally compatible PromptSource
+   * Record list. Element resolution still goes through the live
+   * ChangeLogService so target uids reflect current DOM state.
+   */
+  buildPrompt(records?: readonly PromptSourceRecord[]): PaperxPromptV1 {
+    if (!records) return this.build();
+    return this.buildFrom(
+      records as readonly ChangeRecord[],
+      (id) => this.log.getTargetById(id),
+    );
   }
 
   buildPromptText(records?: readonly PromptSourceRecord[]): string {
-    const prompt = this.buildPrompt(records);
+    const prompt = records ? this.buildPrompt(records) : this.build();
     const preamble = [
       `# paperx prompt (${prompt.schema})`,
       `# generated ${prompt.meta.generatedAt} for ${prompt.meta.pageUrl || '(unknown page)'}`,
       `# ${prompt.meta.changeCount} change(s) across ${prompt.meta.selectionCount} target(s) — paste into Claude Code:`,
     ].join('\n');
     const json = JSON.stringify(prompt, null, 2);
-    return `${preamble}\n\n\`\`\`json\n${json}\n\`\`\`\n`;
+    const fence = '\u0060\u0060\u0060';
+    return `${preamble}\n\n${fence}json\n${json}\n${fence}\n`;
   }
 
   async copyToClipboard(
     records?: readonly PromptSourceRecord[],
     fallbackHost?: ParentNode,
   ): Promise<boolean> {
-    const text = this.buildPromptText(records);
-
-    // Primary path: navigator.clipboard. Available in MV3 content
-    // scripts when called from a user-initiated event handler (e.g.
-    // button click). Wrapped in try/catch because some sites strip
-    // clipboard permissions or run in iframes without it.
-    try {
+    if (records || fallbackHost) {
+      // Legacy path: render the markdown-fenced text and use the
+      // host-supplied fallback container. Kept verbatim from the
+      // pre-S2-A implementation.
+      const text = this.buildPromptText(records);
       const nav = (globalThis as { navigator?: Navigator }).navigator;
       if (nav?.clipboard?.writeText) {
-        await nav.clipboard.writeText(text);
-        return true;
+        try {
+          await nav.clipboard.writeText(text);
+          return true;
+        } catch (err) {
+          console.warn(
+            '[paperx/JsonPromptExporter] clipboard.writeText failed (legacy path)',
+            err,
+          );
+        }
       }
-    } catch (err) {
-      console.warn('[paperx/JsonPromptExporter] clipboard.writeText failed', err);
-    }
-
-    // Fallback: textarea + execCommand('copy'). Mounted into the Shadow
-    // DOM portal layer when caller provides one, otherwise document.body.
-    try {
       const doc = (globalThis as { document?: Document }).document;
       if (!doc) return false;
-      const ta = doc.createElement('textarea');
-      ta.value = text;
-      // Off-screen but focusable. position:fixed so layout never shifts.
-      ta.style.cssText =
-        'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
-      ta.setAttribute('readonly', 'true');
-      const host = fallbackHost ?? doc.body;
-      host.appendChild(ta);
-      ta.select();
-      ta.setSelectionRange(0, text.length);
-      const ok = doc.execCommand('copy');
-      ta.remove();
-      return ok;
-    } catch (err) {
-      console.warn('[paperx/JsonPromptExporter] execCommand fallback failed', err);
-      return false;
+      try {
+        const ta = doc.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText =
+          'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
+        ta.setAttribute('readonly', 'true');
+        const host = fallbackHost ?? doc.body;
+        host.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        const ok = doc.execCommand('copy');
+        ta.remove();
+        return ok;
+      } catch (err) {
+        console.warn(
+          '[paperx/JsonPromptExporter] execCommand fallback failed (legacy path)',
+          err,
+        );
+        return false;
+      }
     }
+    const r = await this.exportToClipboard();
+    return r.ok;
   }
 
-  private buildMeta(
-    records: readonly PromptSourceRecord[],
-    targetCount: number,
-  ): PaperxPrompt['meta'] {
-    const win = globalThis as { location?: Location; document?: Document };
-    const generatedAt = new Date().toISOString();
-    const pageUrl = win.location?.href ?? '';
-    const pageTitle = win.document?.title ?? '';
-    const userAgent = (globalThis as { navigator?: Navigator }).navigator
-      ?.userAgent;
-    const meta: PaperxPrompt['meta'] = {
-      generatedAt,
-      paperxVersion: readPaperxVersion(),
-      pageUrl,
-      pageTitle,
-      selectionCount: targetCount,
-      changeCount: records.length,
-    };
-    if (userAgent) meta.userAgent = userAgent;
-    return meta;
+  async exportToClipboard(): Promise<ExportResult> {
+    let json: string;
+    try {
+      json = JSON.stringify(this.build(), null, 2);
+    } catch (err) {
+      return { ok: false, error: stringifyError(err, 'serialize failed') };
+    }
+
+    // Path 1: navigator.clipboard. MV3 content scripts in a user
+    // gesture have the permission by default for secure contexts.
+    const nav = (globalThis as { navigator?: Navigator }).navigator;
+    if (nav?.clipboard?.writeText) {
+      try {
+        await nav.clipboard.writeText(json);
+        return { ok: true, promptSize: json.length };
+      } catch (err) {
+        console.warn(
+          '[paperx/JsonPromptExporter] clipboard.writeText failed, falling back',
+          err,
+        );
+      }
+    }
+
+    // Path 2: synthetic textarea + execCommand('copy'). Deprecated
+    // but works on every Chromium MV3 host we care about.
+    const doc = (globalThis as { document?: Document }).document;
+    if (doc) {
+      try {
+        const ta = doc.createElement('textarea');
+        ta.value = json;
+        ta.style.cssText =
+          'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;';
+        ta.setAttribute('readonly', '');
+        doc.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, json.length);
+        const ok = doc.execCommand('copy');
+        doc.body.removeChild(ta);
+        if (ok) return { ok: true, promptSize: json.length };
+      } catch (err) {
+        console.warn(
+          '[paperx/JsonPromptExporter] execCommand copy failed',
+          err,
+        );
+      }
+    }
+
+    return { ok: false, error: 'clipboard unavailable' };
   }
+
+  /**
+   * Shared aggregation core. Take chronological records + an
+   * id-to-element resolver and produce a fully populated
+   * PaperxPromptV1.
+   */
+  private buildFrom(
+    records: readonly ChangeRecord[],
+    resolveTarget: (id: string) => HTMLElement | null,
+  ): PaperxPromptV1 {
+    const groups = new Map<string, Group>();
+
+    for (const r of records) {
+      const el = resolveTarget(r.id);
+      // PromptSourceRecord may carry an explicit dataUid; trust
+      // it when set, else read from the live element.
+      const explicitUid = (r as PromptSourceRecord).dataUid;
+      const uidFromEl = el ? readDataUid(el) : null;
+      const uid =
+        explicitUid !== undefined && explicitUid !== null
+          ? explicitUid
+          : uidFromEl;
+      const key = uid ?? r.selector;
+
+      let g = groups.get(key);
+      if (!g) {
+        g = {
+          key,
+          element: el,
+          sampleSelector: r.selector,
+          perProp: new Map(),
+          modes: new Set<ToolMode>(),
+        };
+        groups.set(key, g);
+      } else if (g.element == null && el) {
+        // Adopt the first non-null element we see — earlier records
+        // may have been GCed but a later one is still live.
+        g.element = el;
+      }
+
+      g.modes.add(r.mode as ToolMode);
+      const fold = g.perProp.get(r.property);
+      if (!fold) {
+        g.perProp.set(r.property, { first: r, last: r });
+      } else {
+        // first stays put (preserves the user's original value);
+        // last advances to the most recent edit.
+        fold.last = r;
+      }
+    }
+
+    const targets: PaperxPromptTarget[] = [];
+    let totalChanges = 0;
+    const allModes = new Set<ToolMode>();
+
+    for (const g of groups.values()) {
+      const el = g.element;
+      const tagName = el
+        ? el.tagName.toLowerCase()
+        : extractTag(g.sampleSelector);
+      const elUid = el ? readDataUid(el) : null;
+      // Group key may itself be a uid; if the live element is gone
+      // but the key looks like a uid (no css path delimiters), keep
+      // it. This preserves uid-based aggregation across detach.
+      const inferredUid =
+        elUid ??
+        (g.key !== g.sampleSelector && !g.key.includes('>')
+          ? g.key
+          : null);
+      // Regenerate selector from the live element when possible;
+      // fall back to the sample when the element is gone.
+      const selector = el ? buildSelector(el) : g.sampleSelector;
+
+      const changes: PaperxPromptChange[] = [];
+      for (const fold of g.perProp.values()) {
+        const before = fold.first.before;
+        const after = fold.last.after;
+        if (before === after) continue; // round-trip noop, omit
+        changes.push({
+          property: fold.last.property,
+          before,
+          after,
+          appliedAs: 'inline-style',
+          mode: fold.last.mode as ToolMode,
+        });
+      }
+      if (changes.length === 0) continue; // entire group netted out
+
+      // Stable order inside a target: alphabetic by property —
+      // easier to diff repeated exports.
+      changes.sort((a, b) => a.property.localeCompare(b.property));
+
+      totalChanges += changes.length;
+      for (const m of g.modes) allModes.add(m);
+
+      targets.push({
+        dataUid: inferredUid,
+        selector,
+        tagName,
+        changes,
+      });
+    }
+
+    // Stable order across exports: by selector, then by uid for
+    // determinism in tests / diffs.
+    targets.sort((a, b) => {
+      const s = a.selector.localeCompare(b.selector);
+      if (s !== 0) return s;
+      return (a.dataUid ?? '').localeCompare(b.dataUid ?? '');
+    });
+
+    const generatedAt = new Date().toISOString();
+    const pageUrl = safeRead(() => location.href, '');
+    const pageTitle = safeRead(() => document.title, '');
+    const userAgent = safeRead<string | undefined>(
+      () => navigator.userAgent,
+      undefined,
+    );
+
+    return {
+      schema: PROMPT_SCHEMA_VERSION,
+      version: 1,
+      generatedAt,
+      source: 'paperx-extension',
+      meta: {
+        generatedAt,
+        paperxVersion: PAPERX_VERSION,
+        pageUrl,
+        pageTitle,
+        ...(userAgent ? { userAgent } : {}),
+        selectionCount: targets.length,
+        changeCount: totalChanges,
+      },
+      summary: {
+        totalChanges,
+        uniqueTargets: targets.length,
+        modes: [...allModes].sort() as ToolMode[],
+      },
+      targets,
+      instructions: DEFAULT_INSTRUCTIONS,
+    };
+  }
+}
+
+/**
+ * Pull the trailing tag from a selector path like `div > span.foo.bar`.
+ * Falls back to `'unknown'` if the input doesn't look like our
+ * buildSelector output, so downstream tagName fields are never empty.
+ */
+function extractTag(selector: string): string {
+  if (!selector) return 'unknown';
+  const last = selector.split('>').pop()?.trim() ?? '';
+  if (!last) return 'unknown';
+  const m = last.match(/^[a-zA-Z][a-zA-Z0-9-]*/);
+  return m ? m[0].toLowerCase() : 'unknown';
+}
+
+function safeRead<T>(fn: () => T, fallback: T): T {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
+function stringifyError(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message || fallback;
+  if (typeof err === 'string') return err;
+  return fallback;
 }

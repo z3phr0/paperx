@@ -5,11 +5,13 @@
  *   [mode-badge] [selector ≈ 28%] [property: before → after ≈ 60%] [ts] [⌖ ↶]
  *
  * The locate (⌖) and undo (↶) buttons are spec'd to be inline. Locate
- * resolves the row's selector via document.querySelector, scrolls the
- * element into view, and pulses a temporary outline. Undo delegates to
- * StyleEditService.undo(record.id) — that path also evicts the record
- * from the canonical ChangeLog, so the row will disappear automatically
- * via MobX reactivity.
+ * resolves the row's record id through ChangeLogService.getTargetById
+ * (the canonical path — points at the exact element StyleEditService
+ * mutated, even if the host page also has structurally similar
+ * siblings) and falls back to document.querySelector(record.selector)
+ * when the element has been GCed / detached. The element is then
+ * scrolled into view and outlined for ~800 ms. Undo delegates to
+ * StyleEditService.undo(record.id).
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
@@ -17,7 +19,12 @@ import { Crosshair, Undo2 } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
-import type { ChangeRecord } from '@/shared/services/ChangeLogService';
+import { TYPES } from '@/shared/di/tokens';
+import { getContainer } from '@/shared/di/container';
+import type {
+  ChangeRecord,
+  IChangeLogService,
+} from '@/shared/services/ChangeLogService';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import type { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import type { ToolMode } from '@/shared/types/modes';
@@ -33,9 +40,12 @@ const PULSE_MS = 800;
 
 function formatTime(ts: number): string {
   const d = new Date(ts);
+  // hh:mm:ss in local time. Drop the date — the drawer is for the
+  // current session and noisy timestamps don't help.
   return d.toLocaleTimeString(undefined, { hour12: false });
 }
 
+/** Apply a temporary outline to `el` and remove it after PULSE_MS. */
 function pulse(el: HTMLElement): void {
   const prevOutline = el.style.outline;
   const prevOffset = el.style.outlineOffset;
@@ -44,6 +54,7 @@ function pulse(el: HTMLElement): void {
   el.style.outlineOffset = '2px';
   el.style.transition = 'outline 200ms ease-out';
   window.setTimeout(() => {
+    // Restore. Empty string clears the inline override.
     el.style.outline = prevOutline;
     el.style.outlineOffset = prevOffset;
     el.style.transition = prevTrans;
@@ -60,7 +71,16 @@ export const ChangeLogRow = observer(
   ({ record, styleEdit, uiStore }: ChangeLogRowProps) => {
     const isPinned = uiStore.pinnedRecordId === record.id;
     const rowRef = React.useRef<HTMLDivElement | null>(null);
+    // Resolve once per row. The DI container is a singleton so this
+    // doesn't actually re-instantiate anything; we just need the
+    // log service's id-to-element lookup.
+    const log = React.useMemo(
+      () => getContainer().get<IChangeLogService>(TYPES.ChangeLogService),
+      [],
+    );
 
+    // When pinned, scroll the row into view so the user immediately
+    // sees which entry was just located.
     React.useEffect(() => {
       if (isPinned && rowRef.current) {
         rowRef.current.scrollIntoView({ block: 'nearest' });
@@ -68,26 +88,38 @@ export const ChangeLogRow = observer(
     }, [isPinned]);
 
     const handleLocate = React.useCallback(() => {
-      let el: Element | null = null;
-      try {
-        el = document.querySelector(record.selector);
-      } catch (err) {
-        console.warn('[paperx/ChangeLogRow] querySelector failed', err);
+      // Preferred path: ChangeLogService.getTargetById — points at
+      // the exact element StyleEditService mutated, immune to
+      // structural ambiguity in the selector (e.g. multiple
+      // `div.card` siblings).
+      let el: HTMLElement | null = log.getTargetById(record.id);
+      // Fallback: query by recorded selector. Only used when the
+      // element has been GCed / detached (re-render). Surface a
+      // console warning rather than throw if the selector is invalid.
+      if (!el) {
+        try {
+          el = document.querySelector(record.selector) as HTMLElement | null;
+        } catch (err) {
+          console.warn('[paperx/ChangeLogRow] querySelector failed', err);
+        }
       }
       if (!el) {
+        // Pin anyway so the user sees we acknowledged the click.
         uiStore.pin(record.id);
         return;
       }
       uiStore.pin(record.id);
       try {
-        (el as HTMLElement).scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       } catch {
-        (el as HTMLElement).scrollIntoView();
+        el.scrollIntoView();
       }
-      pulse(el as HTMLElement);
-    }, [record.id, record.selector, uiStore]);
+      pulse(el);
+    }, [log, record.id, record.selector, uiStore]);
 
     const handleUndo = React.useCallback(() => {
+      // If the row was pinned, unpin it before undoing — the row is
+      // about to disappear from the rendered list.
       if (uiStore.pinnedRecordId === record.id) uiStore.unpin();
       styleEdit.undo(record.id);
     }, [record.id, styleEdit, uiStore]);

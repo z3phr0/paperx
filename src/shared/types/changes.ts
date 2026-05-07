@@ -3,17 +3,19 @@
  *
  * Phase 1 already pinned `ChangeRecord` (see ChangeLogService.ts) with the
  * fields {id, ts, selector, property, before, after, mode}. We keep that
- * shape as the single source of truth and add only an optional bridge to
- * the `data-paperx-uid` set by the babel plugin (Phase 2 — R2). Adding
- * fields as optional is backward compatible with Phase 1 callers.
+ * shape as the single source of truth and add only a passthrough for the
+ * `data-uid` attribute that the user's project tooling injects on every
+ * DOM element (R2 — paperx is a pure consumer; we never write this attr
+ * ourselves). Adding fields as optional is backward compatible with
+ * Phase 1 callers.
  */
 
 /** Resolved target metadata captured at edit time. */
 export interface ChangeTarget {
   /** A best-effort css path for human-friendly display. */
   selector: string;
-  /** Babel plugin uid (Phase 2 R2). Null until the plugin runs in user code. */
-  dataPaperxUid: string | null;
+  /** Value of the user project's `data-uid` attribute. Null when absent. */
+  dataUid: string | null;
   /** Tag name (lowercase) — useful for filtering in change-log UI. */
   tagName: string;
 }
@@ -42,8 +44,8 @@ export function buildSelector(el: HTMLElement): string {
   return parts.join(' > ');
 }
 
-/** Return the babel-plugin-injected uid, or null. */
-export function readPaperxUid(el: HTMLElement | null): string | null {
+/** Return the element's `data-uid` attribute, or null. */
+export function readDataUid(el: HTMLElement | null): string | null {
   if (!el) return null;
-  return el.getAttribute('data-paperx-uid');
+  return el.getAttribute('data-uid');
 }

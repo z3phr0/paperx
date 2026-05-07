@@ -17,7 +17,7 @@
 import { makeObservable, observable, action, computed } from 'mobx';
 import { injectable } from 'inversify';
 
-import { readPaperxUid } from '@/shared/types/changes';
+import { readDataUid } from '@/shared/types/changes';
 
 @injectable()
 export class SelectionStore {
@@ -37,7 +37,7 @@ export class SelectionStore {
       clear: action,
       refresh: action,
       selectedTagName: computed,
-      selectedDataPaperxUid: computed,
+      selectedDataUid: computed,
     });
   }
 
@@ -45,8 +45,8 @@ export class SelectionStore {
     return this.selected ? this.selected.tagName.toLowerCase() : null;
   }
 
-  get selectedDataPaperxUid(): string | null {
-    return readPaperxUid(this.selected);
+  get selectedDataUid(): string | null {
+    return readDataUid(this.selected);
   }
 
   hover(el: HTMLElement | null): void {

@@ -102,6 +102,11 @@ export class StyleEditService implements IStyleEditService {
     // Keep a back-reference so undo can find the live element later.
     // We store on the record-keyed weak map below.
     targetMap.set(record.id, target);
+    // Mirror to ChangeLogService so cross-cutting consumers (drawer
+    // Locate button, JsonPromptExporter) can resolve element back
+    // from id without taking a dependency on StyleEditService (which
+    // would be a circular DI edge: log -> editor -> log).
+    this.log.attachTarget(record.id, target);
     return record.id;
   }
 
