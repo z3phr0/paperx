@@ -265,6 +265,45 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
+  test('design mode rotate handle drag writes transform: rotate to inline style', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const handle = page.locator('[data-testid="paperx-rotate-handle"]');
+      await expect(handle).toBeVisible({ timeout: 5_000 });
+
+      const handleBox = await handle.boundingBox();
+      expect(handleBox).not.toBeNull();
+      const startX = handleBox!.x + handleBox!.width / 2;
+      const startY = handleBox!.y + handleBox!.height / 2;
+
+      // Drag the handle ~80px to the right of its anchor — given the
+      // handle sits above the element's top-center, this is a clear
+      // clockwise sweep that should land somewhere in (10°, 90°).
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      await page.mouse.move(startX + 40, startY + 10, { steps: 5 });
+      await page.mouse.move(startX + 80, startY + 40, { steps: 8 });
+      await page.mouse.up();
+
+      // Inline transform should now contain rotate(...deg) post-commit.
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => (el as HTMLElement).style.transform),
+          { timeout: 5_000 },
+        )
+        .toMatch(/rotate\(-?\d+(\.\d+)?deg\)/);
+    } finally {
+      await ctx.close();
+    }
+  });
+
   test('design mode resize handles drag SE corner → width+height edits in ChangeLog', async () => {
     const ctx = await launchWithExtension();
     try {
