@@ -44,6 +44,7 @@ import { DesignPanel } from './panels/design';
 import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
 import { LayoutPanel } from './panels/layout';
+import { TransitionPanel } from './panels/transition';
 import { ChangeLog } from './panels/changelog';
 import { CommentStore } from '@/shared/stores/CommentStore';
 
@@ -169,6 +170,7 @@ export const FloatingToolbar = observer(({ store }: Props) => {
         commentStore={commentStore}
       />
       <LayoutPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
+      <TransitionPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <ChangeLog uiStore={store} />
     </>
   );
