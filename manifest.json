@@ -1,7 +1,6 @@
 {
   "manifest_version": 3,
   "name": "paperx",
-  "version": "0.1.0",
   "description": "Visual CSS editor for designers — edit on any page, export as Claude Code prompt.",
   "action": {
     "default_title": "paperx — toggle (Cmd+Shift+P)",

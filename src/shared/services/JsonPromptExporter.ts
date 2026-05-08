@@ -35,7 +35,7 @@ import {
   type PaperxPromptV1,
 } from '@/shared/types/prompt';
 
-const PAPERX_VERSION = '0.1.0';
+const PAPERX_VERSION = __PAPERX_VERSION__;
 
 const DEFAULT_INSTRUCTIONS = [
   '你正在协助 paperx 完成可视化设计 → 源码同步。下面 `targets` 是用户在浏览器中可视化修改的 DOM 元素及其 CSS 变更。请：',
