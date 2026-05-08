@@ -12,7 +12,9 @@
     "lint": "echo 'lint placeholder (eslint config coming in phase 2)'",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "release": "bun ./scripts/release.ts"
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
@@ -40,6 +42,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "conventional-changelog-cli": "^5.0.0",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",
     "tailwindcss": "^3.4.16",
