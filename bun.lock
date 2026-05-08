@@ -29,6 +29,7 @@
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
         "@vitejs/plugin-react": "^4.3.4",
+        "@zumer/snapdom": "^2.12.0",
         "autoprefixer": "^10.4.20",
         "conventional-changelog-cli": "^5.0.0",
         "postcss": "^8.4.49",
@@ -313,6 +314,8 @@
     "@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "https://bnpm.byted.org/@vitejs/plugin-react/-/plugin-react-4.7.0.tgz", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
 
     "@webcomponents/custom-elements": ["@webcomponents/custom-elements@1.6.0", "https://bnpm.byted.org/@webcomponents/custom-elements/-/custom-elements-1.6.0.tgz", {}, "sha512-CqTpxOlUCPWRNUPZDxT5v2NnHXA4oox612iUGnmTUGQFhZ1Gkj8kirtl/2wcF6MqX7+PqqicZzOCBKKfIn0dww=="],
+
+    "@zumer/snapdom": ["@zumer/snapdom@2.12.0", "https://bnpm.byted.org/@zumer/snapdom/-/snapdom-2.12.0.tgz", {}, "sha512-TdLGu+1RkKI3JKfMFvn1gRPD/rl8hrAeN6aFjjd0w7S39nulbd94ChxSlfH7nSCm8kzuQkeWFxIsij4+Mk1RDg=="],
 
     "acorn": ["acorn@8.16.0", "https://bnpm.byted.org/acorn/-/acorn-8.16.0.tgz", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
 

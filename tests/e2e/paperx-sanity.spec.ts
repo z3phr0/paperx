@@ -955,3 +955,87 @@ test.describe('paperx Comment overhaul (v0.2.1)', () => {
     }
   });
 });
+
+/**
+ * v0.2.2 — Locate flash overlay + snapdom-driven thumbnail.
+ */
+test.describe('paperx Comment fix (v0.2.2)', () => {
+  test('Locate: clicking the crosshair fires the flash overlay + toast', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      await page.locator('[data-testid="paperx-comment-input"]').fill('check this');
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      // Locate button is no longer hover-only; click it directly.
+      await page
+        .locator('[data-testid^="paperx-comment-locate-cmt-"]')
+        .first()
+        .click();
+
+      await expect(page.locator('[data-testid="paperx-locate-flash"]')).toBeVisible({
+        timeout: 5_000,
+      });
+      const toast = page.locator('[data-testid="paperx-comment-toast"]');
+      await expect(toast).toBeVisible();
+      await expect(toast).toContainText('Located');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Locate: missing element surfaces "no longer in DOM" toast', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      await page.locator('[data-testid="paperx-comment-input"]').fill('check this');
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      // Detach the element from the DOM so the WeakRef deref still works
+      // but isConnected returns false.
+      await target.evaluate((el) => el.remove());
+
+      await page
+        .locator('[data-testid^="paperx-comment-locate-cmt-"]')
+        .first()
+        .click();
+
+      const toast = page.locator('[data-testid="paperx-comment-toast"]');
+      await expect(toast).toBeVisible({ timeout: 5_000 });
+      await expect(toast).toContainText('no longer in DOM');
+      await expect(page.locator('[data-testid="paperx-locate-flash"]')).toHaveCount(0);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Thumbnail: snapdom capture replaces the skeleton with a PNG', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      await page.locator('[data-testid="paperx-comment-input"]').fill('check this');
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      // Capture is fire-and-forget; we wait until the PNG arrives.
+      const img = page.locator('[data-testid="paperx-comment-thumb-img"]').first();
+      await expect(img).toBeVisible({ timeout: 8_000 });
+      const src = await img.getAttribute('src');
+      expect(src).toMatch(/^data:image\/png;base64,/);
+    } finally {
+      await ctx.close();
+    }
+  });
+});

@@ -41,6 +41,13 @@ export interface PaperxComment {
   bbox: CommentBbox;
   /** Sampled background color (hex) or null when not resolvable. */
   thumbnailColor: string | null;
+  /**
+   * PNG data URL of the element captured by snapdom at create time.
+   * Set asynchronously after add(); null while the capture is in
+   * flight or if the capture failed. Optional on import for
+   * forward / backward compatibility.
+   */
+  thumbnailDataUrl?: string | null;
   text: string;
   priority: CommentPriority;
   /** ms-since-epoch timestamp. */

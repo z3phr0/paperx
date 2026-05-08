@@ -79,20 +79,46 @@ interface ThumbnailProps {
   comment: PaperxComment;
 }
 
-const Thumbnail: React.FC<ThumbnailProps> = ({ comment }) => (
-  <div className="flex shrink-0 items-center gap-1.5">
-    <div
-      data-testid="paperx-comment-thumb-color"
-      className="h-6 w-6 shrink-0 rounded border border-white/20"
-      style={{ background: comment.thumbnailColor ?? 'transparent' }}
-      title={comment.thumbnailColor ?? 'no background'}
-    />
-    <div className="text-[9px] leading-tight text-muted-foreground">
-      <div className="font-mono">&lt;{comment.tagName}&gt;</div>
-      <div>{Math.round(comment.bbox.w)}×{Math.round(comment.bbox.h)}</div>
+const Thumbnail: React.FC<ThumbnailProps> = ({ comment }) => {
+  // Render priority:
+  //   1. PNG capture (snapdom) when available — the canonical thumbnail
+  //   2. Skeleton placeholder when capture is in-flight (fresh comment,
+  //      thumbnailDataUrl still null, less than 3 s old)
+  //   3. Sampled color swatch fallback for older / imported comments
+  //      whose capture isn't available
+  const hasImage = typeof comment.thumbnailDataUrl === 'string' && comment.thumbnailDataUrl.length > 0;
+  const isFresh = Date.now() - comment.ts < 3000;
+  const skeleton = !hasImage && isFresh;
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {hasImage ? (
+        <img
+          data-testid="paperx-comment-thumb-img"
+          src={comment.thumbnailDataUrl!}
+          alt=""
+          className="h-12 w-12 shrink-0 rounded border border-white/20 object-cover"
+        />
+      ) : skeleton ? (
+        <div
+          data-testid="paperx-comment-thumb-skeleton"
+          className="h-12 w-12 shrink-0 animate-pulse rounded border border-white/20 bg-white/10"
+          aria-hidden
+        />
+      ) : (
+        <div
+          data-testid="paperx-comment-thumb-color"
+          className="h-12 w-12 shrink-0 rounded border border-white/20"
+          style={{ background: comment.thumbnailColor ?? 'transparent' }}
+          title={comment.thumbnailColor ?? 'no background'}
+        />
+      )}
+      <div className="text-[9px] leading-tight text-muted-foreground">
+        <div className="font-mono">&lt;{comment.tagName}&gt;</div>
+        <div>{Math.round(comment.bbox.w)}×{Math.round(comment.bbox.h)}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 interface RowProps {
   comment: PaperxComment;

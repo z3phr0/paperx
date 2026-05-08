@@ -13,6 +13,7 @@
  */
 import { makeObservable, observable, action } from 'mobx';
 import { injectable } from 'inversify';
+import { snapdom } from '@zumer/snapdom';
 
 import { buildSelector, readDataUid } from '@/shared/types/changes';
 import {
@@ -53,6 +54,22 @@ function rgbToHex(rgb: string): string | null {
   const [, r, g, b] = m;
   const hex = (n: string) => Number(n).toString(16).padStart(2, '0');
   return `#${hex(r!)}${hex(g!)}${hex(b!)}`;
+}
+
+async function capturePngDataUrl(el: HTMLElement): Promise<string | null> {
+  // snapdom returns a CaptureResult; toCanvas raster's the SVG snapshot
+  // and we read it back as a base64 PNG. Scale 0.5 keeps the thumbnail
+  // payload modest (most rows render the image at h-12 anyway).
+  try {
+    const result = await snapdom(el, { fast: true, scale: 0.5, embedFonts: false });
+    const canvas = await result.toCanvas();
+    return canvas.toDataURL('image/png');
+  } catch (err) {
+    // Don't surface to UI — fallback (color swatch / placeholder) handles
+    // the empty case gracefully.
+    console.warn('[paperx] snapdom capture failed', err);
+    return null;
+  }
 }
 
 function sampleColor(el: HTMLElement): string | null {
@@ -98,6 +115,7 @@ export class CommentStore {
       remove: action,
       reset: action,
       setPriority: action,
+      setThumbnail: action,
       importMany: action,
     });
   }
@@ -114,12 +132,21 @@ export class CommentStore {
       tagName: target.tagName.toLowerCase(),
       bbox: captureBbox(target),
       thumbnailColor: sampleColor(target),
+      thumbnailDataUrl: null,
       text: trimmed,
       priority,
       ts: Date.now(),
     };
     this.comments = [...this.comments, c];
     attachRef(c.id, target);
+
+    // Fire-and-forget snapdom capture. We do not block the user on
+    // capture; if it fails, the row falls back to the sampled color
+    // swatch + tag/size block.
+    void capturePngDataUrl(target).then((dataUrl) => {
+      if (dataUrl) this.setThumbnail(c.id, dataUrl);
+    });
+
     return c;
   }
 
@@ -138,6 +165,14 @@ export class CommentStore {
     if (idx < 0) return;
     const next = [...this.comments];
     next[idx] = { ...next[idx]!, priority: p };
+    this.comments = next;
+  }
+
+  setThumbnail(id: string, dataUrl: string | null): void {
+    const idx = this.comments.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const next = [...this.comments];
+    next[idx] = { ...next[idx]!, thumbnailDataUrl: dataUrl };
     this.comments = next;
   }
 
