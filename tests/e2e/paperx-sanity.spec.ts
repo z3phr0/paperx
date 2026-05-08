@@ -822,3 +822,136 @@ test.describe('paperx Sprint 3 (F + G)', () => {
     }
   });
 });
+
+/**
+ * v0.2.1 — Comment overhaul: priority chip + Figma-style guides +
+ * spacing visualization + import/export.
+ */
+test.describe('paperx Comment overhaul (v0.2.1)', () => {
+  test('Priority chip cycles P2 → P0 → P1 on consecutive clicks', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      await page.locator('[data-testid="paperx-comment-input"]').fill('check this');
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      // Find the priority chip on the new comment row. It carries
+      // testid paperx-comment-priority-${id}; we don't know the id, so
+      // match by testid prefix.
+      const chip = page.locator('[data-testid^="paperx-comment-priority-cmt-"]').first();
+      await expect(chip).toBeVisible({ timeout: 5_000 });
+      await expect(chip).toHaveText('P2');
+
+      await chip.click();
+      await expect(chip).toHaveText('P0');
+      await chip.click();
+      await expect(chip).toHaveText('P1');
+      await chip.click();
+      await expect(chip).toHaveText('P2');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('CommentGuides: bbox dashed outline renders for selected element', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      await expect(page.locator('[data-testid="paperx-comment-guides-bbox"]')).toBeVisible({
+        timeout: 5_000,
+      });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('SpacingGuides: padding bands render for cta-btn-003 (padding 8px 16px)', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      // The fixture sets padding: 8px 16px on the button, so all 4
+      // padding bands should render.
+      await expect(page.locator('[data-testid="paperx-spacing-padding-left"]')).toBeVisible({
+        timeout: 5_000,
+      });
+      await expect(page.locator('[data-testid="paperx-spacing-padding-right"]')).toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Comment import: paperx-comments-v1 JSON loads via file input', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-comment"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      const payload = {
+        schema: 'paperx-comments-v1',
+        version: 1,
+        generatedAt: '2026-01-01T00:00:00Z',
+        source: 'paperx-extension',
+        paperxVersion: '0.2.1',
+        pageUrl: 'https://example.com/',
+        pageTitle: 'fake',
+        comments: [
+          {
+            id: 'cmt-fake-1',
+            targetKey: 'fake-uid-1',
+            targetLabel: '[data-uid="fake-1"]',
+            selector: 'div.fake',
+            dataUid: 'fake-uid-1',
+            tagName: 'div',
+            bbox: { x: 0, y: 0, w: 10, h: 10 },
+            thumbnailColor: '#3b82f6',
+            text: 'imported note A',
+            priority: 'P0',
+            ts: 1735689600000,
+          },
+          {
+            id: 'cmt-fake-2',
+            targetKey: 'fake-uid-2',
+            targetLabel: '[data-uid="fake-2"]',
+            selector: 'span.fake',
+            dataUid: 'fake-uid-2',
+            tagName: 'span',
+            bbox: { x: 0, y: 0, w: 20, h: 20 },
+            thumbnailColor: null,
+            text: 'imported note B',
+            priority: 'P1',
+            ts: 1735689700000,
+          },
+        ],
+      };
+
+      await page.locator('[data-testid="paperx-comment-import-file"]').setInputFiles({
+        name: 'paperx-comments-test.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
+      });
+
+      const status = page.locator('[data-testid="paperx-comment-import-status"]');
+      await expect(status).toBeVisible({ timeout: 5_000 });
+      await expect(status).toHaveText(/Imported 2 comments/);
+
+      await expect(page.getByText('imported note A', { exact: false })).toBeVisible();
+      await expect(page.getByText('imported note B', { exact: false })).toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  });
+});
