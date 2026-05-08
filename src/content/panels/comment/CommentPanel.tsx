@@ -19,7 +19,7 @@ import { Crosshair, Download, Trash2, Upload } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { Card, CardHeader, CardContent } from '@/shared/ui/Card';
-import type { UIStore } from '@/shared/stores/UIStore';
+import { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
 import type { CommentStore } from '@/shared/stores/CommentStore';
 import { buildSelector } from '@/shared/types/changes';
@@ -55,17 +55,6 @@ const PRIORITY_LABEL: Record<CommentPriority, string> = {
 function fmtTs(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function flashElement(el: HTMLElement): void {
-  const prev = el.style.outline;
-  const prevOff = el.style.outlineOffset;
-  el.style.outline = '2px solid rgb(16, 185, 129)';
-  el.style.outlineOffset = '2px';
-  setTimeout(() => {
-    el.style.outline = prev;
-    el.style.outlineOffset = prevOff;
-  }, 800);
 }
 
 interface PriorityChipProps {
@@ -108,21 +97,27 @@ const Thumbnail: React.FC<ThumbnailProps> = ({ comment }) => (
 interface RowProps {
   comment: PaperxComment;
   commentStore: CommentStore;
+  uiStore: UIStore;
+  onMsg: (msg: string) => void;
   showSelector?: boolean;
 }
 
-const Row: React.FC<RowProps> = ({ comment, commentStore, showSelector }) => {
+const Row: React.FC<RowProps> = ({ comment, commentStore, uiStore, onMsg, showSelector }) => {
   const locate = () => {
     const el = commentStore.getTargetById(comment.id);
-    if (!el || !el.isConnected) return;
+    if (!el || !el.isConnected) {
+      onMsg('Element no longer in DOM');
+      return;
+    }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    flashElement(el);
+    uiStore.flashAt(comment.id);
+    onMsg(`Located ${comment.targetLabel}`);
   };
   const cyclePriority = () => {
     commentStore.setPriority(comment.id, nextPriority(comment.priority));
   };
   return (
-    <div className="group flex items-start gap-2 rounded border border-white/10 bg-white/5 p-1.5">
+    <div className="flex items-start gap-2 rounded border border-white/10 bg-white/5 p-1.5">
       <PriorityChip
         value={comment.priority}
         onCycle={cyclePriority}
@@ -138,7 +133,7 @@ const Row: React.FC<RowProps> = ({ comment, commentStore, showSelector }) => {
         )}
         <div className="mt-0.5 text-[10px] text-muted-foreground">{fmtTs(comment.ts)}</div>
       </div>
-      <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition group-hover:opacity-100">
+      <div className="flex shrink-0 flex-col gap-0.5 opacity-60 transition hover:opacity-100">
         <Button
           variant="ghost"
           size="icon"
@@ -180,7 +175,13 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
     uiStore.visible && uiStore.mode === 'comment' && selectionStore.selected != null;
   const [draft, setDraft] = React.useState('');
   const [draftPriority, setDraftPriority] = React.useState<CommentPriority>(DEFAULT_PRIORITY);
-  const [importMsg, setImportMsg] = React.useState<string>('');
+  const [panelMsg, setPanelMsg] = React.useState<string>('');
+  const panelMsgTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showPanelMsg = React.useCallback((msg: string) => {
+    setPanelMsg(msg);
+    if (panelMsgTimerRef.current != null) clearTimeout(panelMsgTimerRef.current);
+    panelMsgTimerRef.current = setTimeout(() => setPanelMsg(''), 4000);
+  }, []);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!visible) return null;
@@ -208,11 +209,10 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
       const text = await file.text();
       const parsed = parseCommentsV1(JSON.parse(text));
       const n = commentStore.importMany(parsed.comments);
-      setImportMsg(`Imported ${n} comments.`);
+      showPanelMsg(`Imported ${n} comments.`);
     } catch (err) {
-      setImportMsg(`Import failed: ${(err as Error).message}`);
+      showPanelMsg(`Import failed: ${(err as Error).message}`);
     }
-    setTimeout(() => setImportMsg(''), 4000);
   };
 
   return (
@@ -264,9 +264,9 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
         </div>
       </header>
 
-      {importMsg && (
-        <div className="mb-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-muted-foreground" data-testid="paperx-comment-import-status">
-          {importMsg}
+      {panelMsg && (
+        <div className="mb-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-muted-foreground" data-testid="paperx-comment-toast">
+          {panelMsg}
         </div>
       )}
 
@@ -323,7 +323,7 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
             <div className="text-[11px] text-muted-foreground">No comments on this element yet.</div>
           ) : (
             here.slice().reverse().map((c) => (
-              <Row key={c.id} comment={c} commentStore={commentStore} />
+              <Row key={c.id} comment={c} commentStore={commentStore} uiStore={uiStore} onMsg={showPanelMsg} />
             ))
           )}
         </CardContent>
@@ -337,7 +337,7 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
               .slice()
               .reverse()
               .map((c) => (
-                <Row key={c.id} comment={c} commentStore={commentStore} showSelector />
+                <Row key={c.id} comment={c} commentStore={commentStore} uiStore={uiStore} onMsg={showPanelMsg} showSelector />
               ))}
           </CardContent>
         </Card>

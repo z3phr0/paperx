@@ -944,7 +944,7 @@ test.describe('paperx Comment overhaul (v0.2.1)', () => {
         buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
       });
 
-      const status = page.locator('[data-testid="paperx-comment-import-status"]');
+      const status = page.locator('[data-testid="paperx-comment-toast"]');
       await expect(status).toBeVisible({ timeout: 5_000 });
       await expect(status).toHaveText(/Imported 2 comments/);
 

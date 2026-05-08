@@ -14,15 +14,25 @@ import type { ToolMode } from '@/shared/types/modes';
 export class UIStore {
   visible = false;
   mode: ToolMode = 'design';
+  /**
+   * Comment id whose target should pulse a Locate flash overlay.
+   * Auto-clears via setTimeout so consumers don't have to debounce.
+   */
+  flashCommentId: string | null = null;
+
+  private _flashTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     makeObservable(this, {
       visible: observable,
       mode: observable,
+      flashCommentId: observable,
       toggle: action,
       show: action,
       hide: action,
       setMode: action,
+      flashAt: action,
+      clearFlash: action,
       isActive: computed,
     });
   }
@@ -45,5 +55,19 @@ export class UIStore {
 
   setMode(next: ToolMode): void {
     this.mode = next;
+  }
+
+  flashAt(commentId: string, durationMs = 1800): void {
+    this.flashCommentId = commentId;
+    if (this._flashTimer != null) clearTimeout(this._flashTimer);
+    this._flashTimer = setTimeout(() => this.clearFlash(), durationMs);
+  }
+
+  clearFlash(): void {
+    this.flashCommentId = null;
+    if (this._flashTimer != null) {
+      clearTimeout(this._flashTimer);
+      this._flashTimer = null;
+    }
   }
 }
