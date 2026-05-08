@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/z3phr0/paperx/compare/v0.2.0...v0.2.1) (2026-05-08)
+
+
+### Features
+
+* **comment:** paperx-comments-v1 + Figma-style guide overlays ([56c1d3b](https://github.com/z3phr0/paperx/commit/56c1d3b6f4a0a448de5c0a16223b4f7db25eaeaf))
+* **comment:** priority chip + thumbnail + locate + import/export panel ([b8a3018](https://github.com/z3phr0/paperx/commit/b8a30184079615b5e403dbaa1ff0a76531fc0381))
 # 0.2.0 (2026-05-08)
 
 
