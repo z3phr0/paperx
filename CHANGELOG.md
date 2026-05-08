@@ -1,3 +1,14 @@
+## [0.2.2](https://github.com/z3phr0/paperx/compare/v0.2.1...v0.2.2) (2026-05-08)
+
+
+### Bug Fixes
+
+* **comment:** unmissable Locate flash + always-visible action buttons ([8081984](https://github.com/z3phr0/paperx/commit/808198453f556f279b9e3c7b26a6b63c68fb8bc6))
+
+
+### Features
+
+* **comment:** real PNG thumbnails via snapdom + 3 new e2e ([51a3388](https://github.com/z3phr0/paperx/commit/51a338812e6700b6e2bd025bc273479e4f08ccfa))
 ## [0.2.1](https://github.com/z3phr0/paperx/compare/v0.2.0...v0.2.1) (2026-05-08)
 
 
