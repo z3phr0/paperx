@@ -255,7 +255,7 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
 
       // Listed comment text must appear, count line should reflect it.
       await expect(panel.getByText(NOTE, { exact: false })).toBeVisible();
-      await expect(panel.getByText('Comments (1)', { exact: false })).toBeVisible();
+      await expect(panel.getByText('Comments here (1)', { exact: false })).toBeVisible();
       // Submitting an empty draft was already disabled; submitting clears
       // the draft. A second submit attempt without re-entering text
       // should be a no-op (button disabled), so the count stays at 1.

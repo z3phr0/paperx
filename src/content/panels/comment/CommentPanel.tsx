@@ -1,14 +1,21 @@
 /**
- * CommentPanel — review-mode notes attached to the selected element.
+ * CommentPanel — review-mode notes attached to a DOM element.
  *
- * Visible iff `mode === 'comment' && selected != null`. Lets the
- * reviewer attach plain-text notes to an element keyed by
- * `data-uid ?? selector`. Storage is in-memory (CommentStore) for now;
- * persistence is a future Phase concern.
+ * Visible iff `mode === 'comment' && selected != null`. Surfaces:
+ *   - new-comment composer with priority selector (P0/P1/P2, default P2)
+ *   - "Comments here" — comments attached to the current selection
+ *   - "All comments" — every comment in the store, grouped by target
+ *   - import / export of paperx-comments-v1 JSON
+ *
+ * Per-row affordances:
+ *   - priority chip (cycle P0→P1→P2 on click; danger / warn / info colors)
+ *   - selector + size + color thumbnail block
+ *   - locate button (re-resolve via WeakRef + scrollIntoView + flash)
+ *   - delete button (hover-revealed)
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Trash2 } from 'lucide-react';
+import { Crosshair, Download, Trash2, Upload } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { Card, CardHeader, CardContent } from '@/shared/ui/Card';
@@ -16,6 +23,14 @@ import type { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
 import type { CommentStore } from '@/shared/stores/CommentStore';
 import { buildSelector } from '@/shared/types/changes';
+import {
+  COMMENT_PRIORITIES,
+  DEFAULT_PRIORITY,
+  nextPriority,
+  parseCommentsV1,
+  type CommentPriority,
+  type PaperxComment,
+} from '@/shared/types/comments';
 
 interface Props {
   uiStore: UIStore;
@@ -23,23 +38,181 @@ interface Props {
   commentStore: CommentStore;
 }
 
+const PRIORITY_CLASS: Record<CommentPriority, string> = {
+  // tailwind utility classes — the host page's styles are scoped out by
+  // the Shadow DOM so we can use these freely.
+  P0: 'bg-rose-500/15 text-rose-600 ring-1 ring-rose-500/30',
+  P1: 'bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30',
+  P2: 'bg-sky-500/15 text-sky-600 ring-1 ring-sky-500/30',
+};
+
+const PRIORITY_LABEL: Record<CommentPriority, string> = {
+  P0: 'P0',
+  P1: 'P1',
+  P2: 'P2',
+};
+
 function fmtTs(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function flashElement(el: HTMLElement): void {
+  const prev = el.style.outline;
+  const prevOff = el.style.outlineOffset;
+  el.style.outline = '2px solid rgb(16, 185, 129)';
+  el.style.outlineOffset = '2px';
+  setTimeout(() => {
+    el.style.outline = prev;
+    el.style.outlineOffset = prevOff;
+  }, 800);
+}
+
+interface PriorityChipProps {
+  value: CommentPriority;
+  onCycle?: () => void;
+  testId?: string;
+}
+
+const PriorityChip: React.FC<PriorityChipProps> = ({ value, onCycle, testId }) => (
+  <button
+    type="button"
+    onClick={onCycle}
+    data-testid={testId}
+    className={`inline-flex h-5 min-w-[28px] items-center justify-center rounded-md px-1.5 text-[10px] font-semibold ${PRIORITY_CLASS[value]} ${onCycle ? 'cursor-pointer' : 'cursor-default'}`}
+    aria-label={`Priority ${PRIORITY_LABEL[value]}`}
+  >
+    {PRIORITY_LABEL[value]}
+  </button>
+);
+
+interface ThumbnailProps {
+  comment: PaperxComment;
+}
+
+const Thumbnail: React.FC<ThumbnailProps> = ({ comment }) => (
+  <div className="flex shrink-0 items-center gap-1.5">
+    <div
+      data-testid="paperx-comment-thumb-color"
+      className="h-6 w-6 shrink-0 rounded border border-white/20"
+      style={{ background: comment.thumbnailColor ?? 'transparent' }}
+      title={comment.thumbnailColor ?? 'no background'}
+    />
+    <div className="text-[9px] leading-tight text-muted-foreground">
+      <div className="font-mono">&lt;{comment.tagName}&gt;</div>
+      <div>{Math.round(comment.bbox.w)}×{Math.round(comment.bbox.h)}</div>
+    </div>
+  </div>
+);
+
+interface RowProps {
+  comment: PaperxComment;
+  commentStore: CommentStore;
+  showSelector?: boolean;
+}
+
+const Row: React.FC<RowProps> = ({ comment, commentStore, showSelector }) => {
+  const locate = () => {
+    const el = commentStore.getTargetById(comment.id);
+    if (!el || !el.isConnected) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    flashElement(el);
+  };
+  const cyclePriority = () => {
+    commentStore.setPriority(comment.id, nextPriority(comment.priority));
+  };
+  return (
+    <div className="group flex items-start gap-2 rounded border border-white/10 bg-white/5 p-1.5">
+      <PriorityChip
+        value={comment.priority}
+        onCycle={cyclePriority}
+        testId={`paperx-comment-priority-${comment.id}`}
+      />
+      <Thumbnail comment={comment} />
+      <div className="min-w-0 flex-1">
+        <div className="break-words text-[11px] leading-snug">{comment.text}</div>
+        {showSelector && (
+          <div className="mt-0.5 truncate font-mono text-[9px] text-muted-foreground" title={comment.targetLabel}>
+            {comment.targetLabel}
+          </div>
+        )}
+        <div className="mt-0.5 text-[10px] text-muted-foreground">{fmtTs(comment.ts)}</div>
+      </div>
+      <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition group-hover:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={locate}
+          aria-label="Locate element"
+          title="Locate"
+          data-testid={`paperx-comment-locate-${comment.id}`}
+          className="h-5 w-5"
+        >
+          <Crosshair className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => commentStore.remove(comment.id)}
+          aria-label="Delete comment"
+          title="Delete"
+          className="h-5 w-5"
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+function downloadJson(filename: string, payload: unknown): void {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }: Props) => {
   const visible =
     uiStore.visible && uiStore.mode === 'comment' && selectionStore.selected != null;
   const [draft, setDraft] = React.useState('');
+  const [draftPriority, setDraftPriority] = React.useState<CommentPriority>(DEFAULT_PRIORITY);
+  const [importMsg, setImportMsg] = React.useState<string>('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!visible) return null;
   const target = selectionStore.selected!;
-  const list = commentStore.listForTarget(target);
+  const here = commentStore.listForTarget(target);
+  const hereKey = here[0]?.targetKey;
+  const others = commentStore.comments.filter((c) => c.targetKey !== hereKey);
 
   const submit = () => {
-    const c = commentStore.add(target, draft);
+    const c = commentStore.add(target, draft, draftPriority);
     if (c) setDraft('');
+  };
+
+  const onExport = () => {
+    const payload = commentStore.exportV1();
+    downloadJson(`paperx-comments-${new Date().toISOString().slice(0, 10)}.json`, payload);
+  };
+
+  const onImportClick = () => fileInputRef.current?.click();
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so same file can be picked again
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = parseCommentsV1(JSON.parse(text));
+      const n = commentStore.importMany(parsed.comments);
+      setImportMsg(`Imported ${n} comments.`);
+    } catch (err) {
+      setImportMsg(`Import failed: ${(err as Error).message}`);
+    }
+    setTimeout(() => setImportMsg(''), 4000);
   };
 
   return (
@@ -51,12 +224,51 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <header className="mb-2 px-1 pt-1">
-        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          Selection
+      <header className="mb-2 flex items-start justify-between gap-2 px-1 pt-1">
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Selection</div>
+          <div className="truncate font-mono text-[11px]">{buildSelector(target)}</div>
         </div>
-        <div className="truncate font-mono text-[11px]">{buildSelector(target)}</div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onImportClick}
+            aria-label="Import comments"
+            title="Import paperx-comments-v1 JSON"
+            data-testid="paperx-comment-import"
+            className="h-6 w-6"
+          >
+            <Upload className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onExport}
+            aria-label="Export comments"
+            title="Export paperx-comments-v1 JSON"
+            data-testid="paperx-comment-export"
+            className="h-6 w-6"
+            disabled={commentStore.comments.length === 0}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={onImportFile}
+            className="hidden"
+            data-testid="paperx-comment-import-file"
+          />
+        </div>
       </header>
+
+      {importMsg && (
+        <div className="mb-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-muted-foreground" data-testid="paperx-comment-import-status">
+          {importMsg}
+        </div>
+      )}
 
       <Card className="mb-2">
         <CardHeader className="text-[10px] uppercase">New comment</CardHeader>
@@ -73,9 +285,24 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
             }}
             placeholder="Add a review note (Cmd/Ctrl+Enter to submit)…"
             rows={3}
-            className="w-full resize-none rounded border bg-background p-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+            className="w-full resize-none rounded border bg-white/5 p-1.5 text-[11px] outline-none focus:ring-1 focus:ring-ring"
           />
-          <div className="mt-1 flex justify-end">
+          <div className="mt-1 flex items-center justify-between">
+            <div className="flex items-center gap-1" data-testid="paperx-comment-priority-picker">
+              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Priority</span>
+              {COMMENT_PRIORITIES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setDraftPriority(p)}
+                  data-testid={`paperx-comment-priority-pick-${p}`}
+                  aria-pressed={draftPriority === p}
+                  className={`inline-flex h-5 min-w-[28px] items-center justify-center rounded-md px-1.5 text-[10px] font-semibold ${PRIORITY_CLASS[p]} ${draftPriority === p ? 'ring-2 ring-offset-1 ring-offset-transparent' : 'opacity-60'}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
             <Button
               size="sm"
               onClick={submit}
@@ -89,43 +316,32 @@ export const CommentPanel = observer(({ uiStore, selectionStore, commentStore }:
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="text-[10px] uppercase">
-          Comments ({list.length})
-        </CardHeader>
+      <Card className="mb-2">
+        <CardHeader className="text-[10px] uppercase">Comments here ({here.length})</CardHeader>
         <CardContent className="space-y-1.5">
-          {list.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">No comments yet.</div>
+          {here.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground">No comments on this element yet.</div>
           ) : (
-            list
-              .slice()
-              .reverse()
-              .map((c) => (
-                <div
-                  key={c.id}
-                  className="group flex items-start gap-1.5 rounded border p-1.5"
-                >
-                  <div className="flex-1">
-                    <div className="text-[11px] leading-snug">{c.text}</div>
-                    <div className="mt-0.5 text-[10px] text-muted-foreground">
-                      {fmtTs(c.ts)}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => commentStore.remove(c.id)}
-                    aria-label="Delete comment"
-                    title="Delete"
-                    className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))
+            here.slice().reverse().map((c) => (
+              <Row key={c.id} comment={c} commentStore={commentStore} />
+            ))
           )}
         </CardContent>
       </Card>
+
+      {others.length > 0 && (
+        <Card>
+          <CardHeader className="text-[10px] uppercase">All comments ({others.length})</CardHeader>
+          <CardContent className="space-y-1.5">
+            {others
+              .slice()
+              .reverse()
+              .map((c) => (
+                <Row key={c.id} comment={c} commentStore={commentStore} showSelector />
+              ))}
+          </CardContent>
+        </Card>
+      )}
     </aside>
   );
 });
