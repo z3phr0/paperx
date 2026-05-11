@@ -1006,3 +1006,141 @@ test.describe('paperx popup (v0.2.4)', () => {
     }
   });
 });
+
+/**
+ * v0.5.0 — Border multi-row editor + react-color Sketch ColorPicker.
+ */
+test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
+  test('Border: + adds rows up to 4 (max), then disables', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const addBtn = page.locator('[data-testid="paperx-border-add"]');
+
+      // First click → seeds an "All" row.
+      await addBtn.click({ timeout: 10_000 });
+      const rows = page.locator('[data-testid^="paperx-border-row-b-"]');
+      await expect(rows).toHaveCount(1);
+
+      // With "All" present, + is disabled (mutually exclusive).
+      await expect(addBtn).toBeDisabled();
+
+      // Switch the All row to a specific side so we can add more.
+      const firstDirection = page.locator('[data-testid^="paperx-border-b-"][data-testid$="-direction"]').first();
+      await firstDirection.selectOption('top');
+      await expect(addBtn).toBeEnabled();
+
+      // Add 3 more to reach 4 per-side rows.
+      await addBtn.click();
+      await addBtn.click();
+      await addBtn.click();
+      await expect(rows).toHaveCount(4);
+
+      // At 4 rows, + disabled (no more unique sides left).
+      await expect(addBtn).toBeDisabled();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Border: switching to All collapses other rows + writes shorthand', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const addBtn = page.locator('[data-testid="paperx-border-add"]');
+      await addBtn.scrollIntoViewIfNeeded();
+      await addBtn.click();
+      // First row seeded as All — swap to Top so we can add a second row.
+      const rows = page.locator('[data-testid^="paperx-border-row-b-"]');
+      const firstDirection = page.locator('[data-testid^="paperx-border-b-"][data-testid$="-direction"]').first();
+      await firstDirection.selectOption('top');
+      await addBtn.click();
+      await expect(rows).toHaveCount(2);
+
+      // Confirm per-side longhands wrote.
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => (el as HTMLElement).style.borderTopWidth),
+          { timeout: 5_000 },
+        )
+        .toBe('1px');
+
+      // Flip first row back to All — collapses to single row + shorthand.
+      await firstDirection.selectOption('all');
+      await expect(rows).toHaveCount(1);
+
+      // Assert the inline-style cssText carries the shorthand and not the
+      // per-side longhand declaration. (Reading `style.borderTopWidth`
+      // post-shorthand returns the expanded value, so cssText is the
+      // ground truth.)
+      const cssText = await target.evaluate((el) => el.style.cssText);
+      expect(cssText).toContain('border-width');
+      expect(cssText).not.toContain('border-top-width');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('ColorPicker: clicking the Sketch saturation area picks a non-black color', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      // Spawn a Border row so a ColorPicker swatch is reachable.
+      const addBtn = page.locator('[data-testid="paperx-border-add"]');
+      await addBtn.click({ timeout: 10_000 });
+
+      // Open the picker for the row's color.
+      const swatch = page.locator('[data-testid="paperx-color-trigger"]').first();
+      await swatch.click({ timeout: 10_000 });
+      const popover = page.locator('[data-testid="paperx-color-popover"]');
+      await expect(popover).toBeVisible({ timeout: 5_000 });
+
+      // Locate the saturation area via its react-color class and click
+      // in the top-right (high saturation, high value → strong color).
+      // This is the exact interaction the user reported as broken.
+      const saturationCoords = await page.locator('paperx-root').evaluate((el) => {
+        const sh = (el as HTMLElement & { shadowRoot: ShadowRoot | null }).shadowRoot;
+        if (!sh) return null;
+        const sat = sh.querySelector('.saturation-white');
+        if (!sat) return null;
+        const r = (sat as HTMLElement).getBoundingClientRect();
+        return { x: r.x + r.width * 0.85, y: r.y + r.height * 0.15 };
+      });
+      expect(saturationCoords).not.toBeNull();
+      await page.mouse.click(saturationCoords!.x, saturationCoords!.y);
+
+      // Commit via Apply.
+      await popover.getByRole('button', { name: 'Apply' }).click();
+      await expect(popover).toHaveCount(0, { timeout: 5_000 });
+
+      // Border color must have moved away from the default black.
+      const finalColor = await target.evaluate(
+        (el) =>
+          (el as HTMLElement).style.borderColor ||
+          (el as HTMLElement).style.borderTopColor ||
+          '',
+      );
+      expect(finalColor).not.toBe('');
+      expect(finalColor.toLowerCase()).not.toContain('rgb(0,0,0)');
+      expect(finalColor.toLowerCase()).not.toMatch(/#000000(ff)?/);
+    } finally {
+      await ctx.close();
+    }
+  });
+});

@@ -297,7 +297,7 @@ export function ColorPicker({
           align="start"
           data-testid="paperx-color-popover"
           className={cn(
-            'paperx-surface',
+            'paperx-surface pointer-events-auto',
             'z-[2147483647] rounded-lg p-2 shadow-xl outline-none',
           )}
           // Stop propagation so DesignPanel's onClick / onKeyDown handlers
