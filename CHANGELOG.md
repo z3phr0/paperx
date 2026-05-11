@@ -1,3 +1,9 @@
+# [0.3.0](https://github.com/z3phr0/paperx/compare/v0.2.3...v0.3.0) (2026-05-11)
+
+
+### Features
+
+* **popup:** global ON/OFF switch via MV3 popup panel ([8cc3883](https://github.com/z3phr0/paperx/commit/8cc38830b05803c926a377dbb01e91b738c054a8))
 ## [0.2.3](https://github.com/z3phr0/paperx/compare/v0.2.2...v0.2.3) (2026-05-11)
 ## [0.2.2](https://github.com/z3phr0/paperx/compare/v0.2.1...v0.2.2) (2026-05-08)
 

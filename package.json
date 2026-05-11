@@ -1,6 +1,6 @@
 {
   "name": "paperx",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Visual CSS editor for designers — edit on any page, export as Claude Code prompt.",
