@@ -3,7 +3,8 @@
   "name": "paperx",
   "description": "Visual CSS editor for designers — edit on any page, export as Claude Code prompt.",
   "action": {
-    "default_title": "paperx — toggle (Cmd+Shift+P)",
+    "default_title": "paperx — open popup (Cmd+Shift+P)",
+    "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "src/assets/icon.png",
       "48": "src/assets/icon.png",
@@ -35,7 +36,7 @@
         "default": "Ctrl+Shift+P",
         "mac": "Command+Shift+P"
       },
-      "description": "Toggle paperx toolbar"
+      "description": "Open paperx popup"
     }
   },
   "web_accessible_resources": [

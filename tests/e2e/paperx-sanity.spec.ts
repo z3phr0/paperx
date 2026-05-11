@@ -925,3 +925,48 @@ test.describe('paperx Comment fix (v0.2.2)', () => {
     }
   });
 });
+
+/**
+ * v0.2.4 — Popup global ON/OFF switch.
+ */
+test.describe('paperx popup (v0.2.4)', () => {
+  test('Popup loads with ON state and the big toggle disables the content script', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      // Open a fixture tab first to confirm the toolbar mounts by default.
+      const fixture = await openFixture(ctx);
+      await expect(fixture.locator('[data-testid="paperx-toolbar"]')).toBeVisible({
+        timeout: 10_000,
+      });
+
+      // Resolve the extension id via the MV3 service worker URL.
+      const sw =
+        ctx.serviceWorkers()[0] ??
+        (await ctx.waitForEvent('serviceworker', { timeout: 10_000 }));
+      const extId = new URL(sw.url()).host;
+
+      // Open the popup HTML in a separate page (Chrome doesn't render the
+      // real action popup in headless contexts; navigating directly to
+      // the bundled HTML is the canonical playwright workaround).
+      const popup = await ctx.newPage();
+      await popup.goto(`chrome-extension://${extId}/src/popup/index.html`);
+
+      const toggle = popup.locator('[data-testid="paperx-popup-toggle"]');
+      await expect(toggle).toBeVisible({ timeout: 5_000 });
+      await expect(toggle).toHaveText('ON');
+
+      // Flip to OFF — the storage write should propagate to the content
+      // script in the other tab and tear paperx-root down entirely.
+      await toggle.click();
+      await expect(toggle).toHaveText('OFF');
+      await expect(fixture.locator('paperx-root')).toHaveCount(0, { timeout: 5_000 });
+
+      // Flip back to ON — paperx-root re-mounts.
+      await toggle.click();
+      await expect(toggle).toHaveText('ON');
+      await expect(fixture.locator('paperx-root')).toHaveCount(1, { timeout: 5_000 });
+    } finally {
+      await ctx.close();
+    }
+  });
+});

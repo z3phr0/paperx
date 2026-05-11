@@ -26,6 +26,7 @@ import { UIStore } from '@/shared/stores/UIStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { PAPERX_TOGGLE, type PaperxMessage } from '@/shared/types/messages';
 import { PortalProvider } from '@/shared/ui/portal';
+import { onEnabledChange, readEnabled } from '@/shared/storage/enabled';
 
 const HOST_TAG = 'paperx-root';
 
@@ -100,18 +101,44 @@ function wireMessageBridge(store: UIStore): void {
   });
 }
 
-// Guard against double-injection (e.g. from CRXJS HMR or re-injection on
-// SPA navigation). The custom-element check on the host tag is enough.
-if (!document.querySelector(HOST_TAG)) {
-  const { store } = mount();
-  // Phase 1: start visible by default so reviewers immediately see the
-  // toolbar after `Load unpacked`. Phase 2 will default to hidden and
-  // require Cmd+Shift+P.
-  store.show();
-  wireMessageBridge(store);
-  console.info('[paperx/content] mounted in shadow DOM, listening for PAPERX_TOGGLE');
-} else {
-  console.info('[paperx/content] already mounted, skipping');
+// Lifecycle state — the popup's global toggle adds/removes paperx from
+// every tab via chrome.storage.onChanged. We tear the whole shadow root
+// down on disable so host pages render with zero paperx surface.
+let mounted: MountResult | null = null;
+
+function unmount(): void {
+  if (!mounted) return;
+  try {
+    mounted.root.unmount();
+  } catch (err) {
+    console.warn('[paperx/content] unmount failed', err);
+  }
+  document.querySelector(HOST_TAG)?.remove();
+  mounted = null;
 }
+
+function startMounted(): void {
+  // Guard against double-injection (e.g. from CRXJS HMR or re-injection on
+  // SPA navigation). The custom-element check on the host tag is enough.
+  if (mounted || document.querySelector(HOST_TAG)) {
+    console.info('[paperx/content] already mounted, skipping');
+    return;
+  }
+  mounted = mount();
+  // Start visible by default so reviewers immediately see the toolbar
+  // after the global enable flip; per-tab visibility lives in UIStore.
+  mounted.store.show();
+  wireMessageBridge(mounted.store);
+  console.info('[paperx/content] mounted in shadow DOM');
+}
+
+void readEnabled().then((on) => {
+  if (on) startMounted();
+});
+
+onEnabledChange((on) => {
+  if (on) startMounted();
+  else unmount();
+});
 
 export {};

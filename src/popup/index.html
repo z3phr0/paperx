@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>paperx</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-width: 280px;
+        min-height: 320px;
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          'SF Pro Display',
+          'Segoe UI',
+          Roboto,
+          system-ui,
+          sans-serif;
+        background:
+          radial-gradient(circle at 30% 0%, rgba(244, 63, 94, 0.18), transparent 60%),
+          radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.18), transparent 60%),
+          hsl(0 0% 9%);
+        color: hsl(0 0% 96%);
+        overflow: hidden;
+      }
+      #paperx-popup-root {
+        min-height: 320px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="paperx-popup-root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
