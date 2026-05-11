@@ -627,7 +627,7 @@ test.describe('paperx Sprint 3 (F + G)', () => {
     }
   });
 
-  test('Effects: radius link toggle broadcasts to all 4 corners', async () => {
+  test('Effects: unified radius input broadcasts to all 4 corners', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
@@ -636,17 +636,12 @@ test.describe('paperx Sprint 3 (F + G)', () => {
       const target = page.locator('[data-uid="cta-btn-003"]');
       await target.click();
 
-      // Link toggle defaults to ON per spec, but clicking it would turn
-      // it off. We assert it's pressed first; if not, click once to turn
-      // it on.
-      const linkBtn = page.locator('[data-testid="paperx-radius-link"]');
-      await expect(linkBtn).toBeVisible({ timeout: 5_000 });
-      const pressed = await linkBtn.getAttribute('aria-pressed');
-      if (pressed !== 'true') await linkBtn.click();
-
-      const tl = page.locator('[data-testid="paperx-radius-tl"]');
-      await tl.fill('12');
-      await tl.press('Tab');
+      // Unified mode is the default — typing into the unified input
+      // applies the same value to all 4 corners.
+      const unifiedInput = page.locator('[data-testid="paperx-radius-unified-input"]');
+      await expect(unifiedInput).toBeVisible({ timeout: 5_000 });
+      await unifiedInput.fill('12');
+      await unifiedInput.press('Tab');
 
       await expect
         .poll(
@@ -663,6 +658,47 @@ test.describe('paperx Sprint 3 (F + G)', () => {
           { timeout: 5_000 },
         )
         .toEqual(['12px', '12px', '12px', '12px']);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Effects: mode toggle flips to per-corner; single corner writes alone', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      // Default mode is unified — unified input is visible.
+      await expect(page.locator('[data-testid="paperx-radius-unified-input"]')).toBeVisible({
+        timeout: 5_000,
+      });
+
+      // Flip to per-corner via the top-right toggle.
+      await page.locator('[data-testid="paperx-radius-mode-toggle"]').click();
+      await expect(page.locator('[data-testid="paperx-radius-per-corner"]')).toBeVisible({
+        timeout: 5_000,
+      });
+      await expect(page.locator('[data-testid="paperx-radius-unified-input"]')).toHaveCount(0);
+
+      // Filling only TL must NOT broadcast to other corners.
+      const tl = page.locator('[data-testid="paperx-radius-tl"]');
+      await tl.fill('20');
+      await tl.press('Tab');
+
+      await expect
+        .poll(
+          async () =>
+            target.evaluate((el) => {
+              const s = (el as HTMLElement).style;
+              return [s.borderTopLeftRadius, s.borderTopRightRadius];
+            }),
+          { timeout: 5_000 },
+        )
+        .toEqual(['20px', '']);
     } finally {
       await ctx.close();
     }
