@@ -7,7 +7,6 @@ export const TOOL_MODES = [
   'design',
   'ruler',
   'comment',
-  'layout',
   'transition',
 ] as const;
 
@@ -17,6 +16,5 @@ export const TOOL_MODE_LABELS: Record<ToolMode, string> = {
   design: 'Design',
   ruler: 'Ruler',
   comment: 'Comment',
-  layout: 'Layout',
   transition: 'Transition',
 };

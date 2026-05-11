@@ -22,7 +22,6 @@ import { buildSelector } from '@/shared/types/changes';
 
 import { BoxModelSection } from './sections/BoxModel';
 import { TypographySection } from './sections/Typography';
-import { LayoutSection } from './sections/Layout';
 import { BackgroundSection } from './sections/Background';
 import { BorderSection } from './sections/Border';
 import { EffectsSection } from './sections/Effects';
@@ -36,7 +35,6 @@ interface SectionConfig {
 const SECTIONS: readonly SectionConfig[] = [
   { id: 'boxmodel', title: 'Box Model', render: (t, s) => <BoxModelSection target={t} styleEdit={s} /> },
   { id: 'typography', title: 'Typography', render: (t, s) => <TypographySection target={t} styleEdit={s} /> },
-  { id: 'layout', title: 'Layout', render: (t, s) => <LayoutSection target={t} styleEdit={s} /> },
   { id: 'background', title: 'Background', render: (t, s) => <BackgroundSection target={t} styleEdit={s} /> },
   { id: 'border', title: 'Border', render: (t, s) => <BorderSection target={t} styleEdit={s} /> },
   { id: 'effects', title: 'Effects', render: (t, s) => <EffectsSection target={t} styleEdit={s} /> },

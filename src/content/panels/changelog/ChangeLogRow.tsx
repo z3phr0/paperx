@@ -33,7 +33,6 @@ const MODE_BADGE_CLASS: Record<ToolMode, string> = {
   design: 'bg-blue-500/15 text-blue-700',
   ruler: 'bg-amber-500/15 text-amber-700',
   comment: 'bg-emerald-500/15 text-emerald-700',
-  layout: 'bg-purple-500/15 text-purple-700',
   transition: 'bg-pink-500/15 text-pink-700',
 };
 

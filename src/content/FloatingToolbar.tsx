@@ -21,7 +21,7 @@
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Pencil, Ruler, MessageSquare, LayoutGrid, Zap, X, History } from 'lucide-react';
+import { Pencil, Ruler, MessageSquare, Zap, X, History } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
@@ -46,7 +46,6 @@ import { SnapStore } from '@/shared/stores/SnapStore';
 import { DesignPanel } from './panels/design';
 import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
-import { LayoutPanel } from './panels/layout';
 import { TransitionPanel } from './panels/transition';
 import { ChangeLog } from './panels/changelog';
 import { CommentStore } from '@/shared/stores/CommentStore';
@@ -55,7 +54,6 @@ const MODE_ICONS: Record<ToolMode, React.ComponentType<{ className?: string }>> 
   design: Pencil,
   ruler: Ruler,
   comment: MessageSquare,
-  layout: LayoutGrid,
   transition: Zap,
 };
 
@@ -175,7 +173,6 @@ export const FloatingToolbar = observer(({ store }: Props) => {
         selectionStore={selectionStore}
         commentStore={commentStore}
       />
-      <LayoutPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <TransitionPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <ChangeLog uiStore={store} />
     </>

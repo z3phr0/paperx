@@ -78,7 +78,7 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
       await expect(toolbar).toBeVisible();
 
       // 4 mode buttons
-      for (const m of ['design', 'ruler', 'comment', 'layout'] as const) {
+      for (const m of ['design', 'ruler', 'comment', 'transition'] as const) {
         await expect(page.locator(`[data-testid="paperx-mode-${m}"]`)).toBeVisible();
       }
 
@@ -476,40 +476,6 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
-  test('layout mode toggles display:flex and the change reaches ChangeLog', async () => {
-    const ctx = await launchWithExtension();
-    try {
-      const page = await openFixture(ctx);
-
-      await page.locator('[data-testid="paperx-mode-layout"]').click();
-      const target = page.locator('[data-uid="hero-desc-002"]');
-      await target.click();
-
-      const panel = page.locator('[data-testid="paperx-layout-panel"]');
-      await expect(panel).toBeVisible({ timeout: 5_000 });
-
-      // Display row exposes the candidate values as toggle buttons.
-      await panel.getByRole('button', { name: 'flex', exact: true }).click();
-
-      // Inline style on the host-page element should reflect the choice.
-      await expect
-        .poll(
-          async () =>
-            target.evaluate((el) => (el as HTMLElement).style.display),
-          { timeout: 5_000 },
-        )
-        .toBe('flex');
-
-      // ChangeLog drawer should now carry a row for `display`.
-      await page.locator('[data-testid="paperx-history"]').click();
-      const drawer = page.locator('paperx-root [role="row"]');
-      await expect(drawer.first()).toBeVisible({ timeout: 5_000 });
-      const rowsText = await drawer.allInnerTexts();
-      expect(rowsText.some((t) => t.includes('display'))).toBe(true);
-    } finally {
-      await ctx.close();
-    }
-  });
 });
 
 /**
@@ -593,86 +559,6 @@ test.describe('paperx Sprint 2 (B + C)', () => {
     }
   });
 
-  test('Flex: justify-center quick button writes justify-content: center', async () => {
-    const ctx = await launchWithExtension();
-    try {
-      const page = await openFixture(ctx);
-
-      await page.locator('[data-testid="paperx-mode-layout"]').click();
-      const target = page.locator('[data-uid="hero-title-001"]');
-      await target.click();
-
-      // Switch to display:flex so the FlexControls section mounts.
-      await page.locator('[data-testid="paperx-layout-display-flex"]').click();
-      await expect
-        .poll(async () => target.evaluate((el) => (el as HTMLElement).style.display), {
-          timeout: 5_000,
-        })
-        .toBe('flex');
-
-      // Click the center justify quick button.
-      const justifyCenter = page.locator('[data-testid="paperx-flex-justify-center"]');
-      await expect(justifyCenter).toBeVisible({ timeout: 5_000 });
-      await justifyCenter.click();
-
-      await expect
-        .poll(
-          async () =>
-            target.evaluate((el) => (el as HTMLElement).style.justifyContent),
-          { timeout: 5_000 },
-        )
-        .toBe('center');
-
-      await page.locator('[data-testid="paperx-history"]').click();
-      const rows = page.locator('paperx-root [role="row"]');
-      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
-      const rowsText = await rows.allInnerTexts();
-      expect(rowsText.some((t) => t.includes('justify-content'))).toBe(true);
-    } finally {
-      await ctx.close();
-    }
-  });
-
-  test('Grid: editing template-cols writes inline grid-template-columns', async () => {
-    const ctx = await launchWithExtension();
-    try {
-      const page = await openFixture(ctx);
-
-      await page.locator('[data-testid="paperx-mode-layout"]').click();
-      const target = page.locator('[data-uid="hero-title-001"]');
-      await target.click();
-
-      await page.locator('[data-testid="paperx-layout-display-grid"]').click();
-      await expect
-        .poll(async () => target.evaluate((el) => (el as HTMLElement).style.display), {
-          timeout: 5_000,
-        })
-        .toBe('grid');
-
-      const colsInput = page.locator('[data-testid="paperx-grid-template-cols"]');
-      await expect(colsInput).toBeVisible({ timeout: 5_000 });
-      await colsInput.fill('1fr 2fr');
-      await colsInput.press('Tab');
-
-      await expect
-        .poll(
-          async () =>
-            target.evaluate(
-              (el) => (el as HTMLElement).style.gridTemplateColumns,
-            ),
-          { timeout: 5_000 },
-        )
-        .toBe('1fr 2fr');
-
-      await page.locator('[data-testid="paperx-history"]').click();
-      const rows = page.locator('paperx-root [role="row"]');
-      await expect(rows.first()).toBeVisible({ timeout: 5_000 });
-      const rowsText = await rows.allInnerTexts();
-      expect(rowsText.some((t) => t.includes('grid-template-columns'))).toBe(true);
-    } finally {
-      await ctx.close();
-    }
-  });
 });
 
 /**

@@ -36,9 +36,9 @@ const SIDE_PANEL_WIDTH = 400;
 const PANEL_GUTTER = 8;
 const SIDE_PANEL_MODES: ReadonlySet<string> = new Set([
   'design',
-  'layout',
   'ruler',
   'comment',
+  'transition',
 ]);
 
 export interface ChangeLogDrawerProps {
