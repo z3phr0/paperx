@@ -1,3 +1,9 @@
+# [0.5.0](https://github.com/z3phr0/paperx/compare/v0.4.0...v0.5.0) (2026-05-11)
+
+
+### Features
+
+* **border:** multi-row editor + pointer-events fix for ColorPicker ([9cffef4](https://github.com/z3phr0/paperx/commit/9cffef4a35565d153bc6867c3c6ad53a4742154c))
 # [0.4.0](https://github.com/z3phr0/paperx/compare/v0.3.0...v0.4.0) (2026-05-11)
 
 
