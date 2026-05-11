@@ -1,3 +1,9 @@
+# [0.4.0](https://github.com/z3phr0/paperx/compare/v0.3.0...v0.4.0) (2026-05-11)
+
+
+### Features
+
+* **effects:** dual-mode radius — unified Slider vs per-corner inputs ([f83a82e](https://github.com/z3phr0/paperx/commit/f83a82e1d9d764cb3a8738ad2443d01bb30e8ee8))
 # [0.3.0](https://github.com/z3phr0/paperx/compare/v0.2.3...v0.3.0) (2026-05-11)
 
 
