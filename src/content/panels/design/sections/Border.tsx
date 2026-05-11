@@ -76,6 +76,106 @@ function propsFor(side: BorderSide): { width: string; style: string; color: stri
   };
 }
 
+/**
+ * Convert a CSS color string (typically `rgb(...)` / `rgba(...)` from
+ * getComputedStyle or `#hex8` already from inline style) to an 8-char
+ * hex string so the entry model stays single-format.
+ */
+function cssColorToHex8(raw: string): string {
+  if (!raw) return '#000000ff';
+  const trimmed = raw.trim();
+  if (/^#[0-9a-f]{8}$/i.test(trimmed)) return trimmed.toLowerCase();
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return `${trimmed.toLowerCase()}ff`;
+  const m = /^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)$/i.exec(
+    trimmed,
+  );
+  if (m) {
+    const hex2 = (n: number) =>
+      Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+    const r = Number(m[1]);
+    const g = Number(m[2]);
+    const b = Number(m[3]);
+    const a = m[4] != null ? Number(m[4]) : 1;
+    return `#${hex2(r)}${hex2(g)}${hex2(b)}${hex2(Math.round(a * 255))}`;
+  }
+  return '#000000ff';
+}
+
+/**
+ * Derive the editor entries from the target element's inline style.
+ *
+ * Source-of-truth rule: paperx writes everything through StyleEditService
+ * into inline style, so we mirror back from there. We read inline style
+ * (not computed) so a per-side longhand the user explicitly set takes
+ * precedence over UA-default values; "no border touched yet" gives an
+ * empty array (matches the "No border. Click + to add one." empty state).
+ */
+function deriveEntriesFromTarget(target: HTMLElement): BorderEntry[] {
+  const s = target.style;
+
+  // 'All' detection: any of the three shorthands set inline.
+  const allWidth = s.borderWidth;
+  const allStyle = s.borderStyle;
+  const allColor = s.borderColor;
+  const hasAnyShorthand = !!(allWidth || allStyle || allColor);
+
+  if (hasAnyShorthand) {
+    return [
+      {
+        id: newId(),
+        side: 'all',
+        width: parseInt(allWidth || '0', 10) || 0,
+        color: cssColorToHex8(allColor || '#000000ff'),
+        visible: allStyle !== 'none',
+      },
+    ];
+  }
+
+  // Per-side: walk top/right/bottom/left in plan order. Include any side
+  // that has at least one of its longhands set inline.
+  const entries: BorderEntry[] = [];
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  for (const side of PER_SIDE_ORDER) {
+    const w = (target.style as unknown as Record<string, string>)[
+      `border${cap(side)}Width`
+    ];
+    const st = (target.style as unknown as Record<string, string>)[
+      `border${cap(side)}Style`
+    ];
+    const col = (target.style as unknown as Record<string, string>)[
+      `border${cap(side)}Color`
+    ];
+    if (!w && !st && !col) continue;
+    entries.push({
+      id: newId(),
+      side,
+      width: parseInt(w || '0', 10) || 0,
+      color: cssColorToHex8(col || '#000000ff'),
+      visible: st !== 'none',
+    });
+  }
+  return entries;
+}
+
+/**
+ * Derive the global style picker from inline style. Falls back to
+ * 'solid' when no style is recorded yet.
+ */
+function deriveGlobalStyle(target: HTMLElement): BorderStyle {
+  const s = target.style;
+  const candidates = [
+    s.borderStyle,
+    s.borderTopStyle,
+    s.borderRightStyle,
+    s.borderBottomStyle,
+    s.borderLeftStyle,
+  ];
+  for (const v of candidates) {
+    if (v === 'solid' || v === 'dashed' || v === 'dotted') return v;
+  }
+  return 'solid';
+}
+
 function splitHex8(hex8: string): { hex6: string; alphaPercent: number } {
   const m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(hex8);
   if (!m) return { hex6: '000000', alphaPercent: 100 };
@@ -244,10 +344,29 @@ const Row: React.FC<RowProps> = ({
 };
 
 export const BorderSection = observer(({ target, styleEdit }: Props) => {
-  const [entries, setEntries] = React.useState<BorderEntry[]>([]);
-  const [globalStyle, setGlobalStyle] = React.useState<BorderStyle>('solid');
+  // Entries + global style derive from the target's inline style on
+  // every mount AND every target change. This makes the editor a pure
+  // reflection of host-page state, so:
+  //   - collapsing the section (which unmounts CardContent) and
+  //     re-expanding restores the live border config from inline style
+  //   - switching the selected element re-seeds the panel with that
+  //     element's current border config
+  const [entries, setEntries] = React.useState<BorderEntry[]>(() =>
+    deriveEntriesFromTarget(target),
+  );
+  const [globalStyle, setGlobalStyle] = React.useState<BorderStyle>(() =>
+    deriveGlobalStyle(target),
+  );
   const [styleMenuOpen, setStyleMenuOpen] = React.useState(false);
   const portalContainer = usePortalContainer();
+
+  // Re-seed when the user picks a different element. We don't observe
+  // target.style mutations (host page may churn every frame and the
+  // overhead isn't worth it for a review panel) — only the prop swap.
+  React.useEffect(() => {
+    setEntries(deriveEntriesFromTarget(target));
+    setGlobalStyle(deriveGlobalStyle(target));
+  }, [target]);
 
   const usedSides: Set<BorderSide> = React.useMemo(
     () => new Set(entries.map((e) => e.side)),

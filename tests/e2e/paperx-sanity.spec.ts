@@ -1143,4 +1143,54 @@ test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
       await ctx.close();
     }
   });
+
+  test('Border: collapse + re-expand restores rows from inline style', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      await page.locator('[data-testid="paperx-border-add"]').click({ timeout: 10_000 });
+      const rows = page.locator('[data-testid^="paperx-border-row-b-"]');
+      await expect(rows).toHaveCount(1);
+
+      // Collapse the section by clicking its CardHeader, then expand
+      // again. State must re-seed from inline style, not get blown away.
+      const header = page.locator('paperx-root').getByRole('button', { name: 'Border', exact: true });
+      await header.click();
+      await expect(rows).toHaveCount(0); // CardContent unmounted
+
+      await header.click();
+      await expect(rows).toHaveCount(1, { timeout: 5_000 });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Border: switching the selected element re-seeds the entries', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // First element: add a Border row so inline style is non-empty.
+      await page.locator('[data-uid="cta-btn-003"]').click();
+      await page.locator('[data-testid="paperx-border-add"]').click({ timeout: 10_000 });
+      const rows = page.locator('[data-testid^="paperx-border-row-b-"]');
+      await expect(rows).toHaveCount(1);
+
+      // Switch to a second element which has no inline border.
+      await page.locator('[data-uid="hero-title-001"]').click();
+      await expect(rows).toHaveCount(0, { timeout: 5_000 });
+
+      // Switch back: entries must reappear from inline style.
+      await page.locator('[data-uid="cta-btn-003"]').click();
+      await expect(rows).toHaveCount(1, { timeout: 5_000 });
+    } finally {
+      await ctx.close();
+    }
+  });
 });
