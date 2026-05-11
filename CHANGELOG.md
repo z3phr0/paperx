@@ -1,3 +1,4 @@
+## [0.2.3](https://github.com/z3phr0/paperx/compare/v0.2.2...v0.2.3) (2026-05-11)
 ## [0.2.2](https://github.com/z3phr0/paperx/compare/v0.2.1...v0.2.2) (2026-05-08)
 
 
