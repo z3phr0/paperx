@@ -1,3 +1,9 @@
+## [0.5.1](https://github.com/z3phr0/paperx/compare/v0.5.0...v0.5.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **border:** derive entries from target inline style (collapse + switch) ([de5db15](https://github.com/z3phr0/paperx/commit/de5db15fc4f0862da3628169569cbe13fec25085))
 # [0.5.0](https://github.com/z3phr0/paperx/compare/v0.4.0...v0.5.0) (2026-05-11)
 
 
