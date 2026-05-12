@@ -26,6 +26,11 @@ export interface DropdownProps<V extends string> {
   prefix?: React.ReactNode;
   placeholder?: string;
   'data-testid'?: string;
+  /**
+   * When set, each menu item receives `data-testid={`${itemTestidPrefix}-${item.value}`}`
+   * so e2e tests can target individual options without relying on text.
+   */
+  itemTestidPrefix?: string;
 }
 
 export function Dropdown<V extends string>({
@@ -34,6 +39,7 @@ export function Dropdown<V extends string>({
   items,
   prefix,
   placeholder,
+  itemTestidPrefix,
   ...rest
 }: DropdownProps<V>): React.ReactElement {
   const [open, setOpen] = React.useState(false);
@@ -76,6 +82,10 @@ export function Dropdown<V extends string>({
               type="button"
               className="dv-dropdown-item"
               data-active={value === it.value || undefined}
+              data-value={it.value}
+              data-testid={
+                itemTestidPrefix ? `${itemTestidPrefix}-${it.value}` : undefined
+              }
               onClick={() => {
                 onChange(it.value);
                 setOpen(false);

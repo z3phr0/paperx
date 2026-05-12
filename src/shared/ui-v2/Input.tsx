@@ -42,10 +42,19 @@ export function Input({
   const [v, setV] = React.useState<string>(String(value));
   React.useEffect(() => setV(String(value)), [value]);
 
+  // Surface data-testid on the wrapper, not on the inner <input>, so
+  // tests can locate the field and then drill into the `input` child.
+  // Spreading the testid onto the bare input forces tests to special-case
+  // a leaf locator, which loses the wrapper as a queryable anchor.
+  const { ['data-testid']: testid, ...inputRest } = rest as {
+    'data-testid'?: string;
+  } & typeof rest;
+
   return (
     <div
       className={`dv-input${containerClassName ? ` ${containerClassName}` : ''}`}
       style={flex ? { flex: 1, minWidth: 0 } : { width }}
+      data-testid={testid}
     >
       {prefix != null && <span className="dv-input-prefix">{prefix}</span>}
       <input
@@ -56,7 +65,7 @@ export function Input({
         }}
         placeholder={placeholder}
         className={className}
-        {...rest}
+        {...inputRest}
       />
       {suffix != null && <span className="dv-input-suffix">{suffix}</span>}
     </div>

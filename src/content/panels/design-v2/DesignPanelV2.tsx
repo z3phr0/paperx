@@ -24,6 +24,10 @@ import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { FrameSection } from './sections/Frame';
 import { AppearanceSection } from './sections/Appearance';
 import { FillSection } from './sections/Fill';
+import { BorderSectionV2 } from './sections/Border';
+import { RadiusSectionV2 } from './sections/Radius';
+import { BoxModelDiagram } from './sections/BoxModelDiagram';
+import { CodeBlock } from './sections/CodeBlock';
 
 type SubTab = 'design' | 'inspect';
 
@@ -32,24 +36,6 @@ interface Props {
   selectionStore: SelectionStore;
   styleEdit: IStyleEditService;
 }
-
-const TodoSection: React.FC<{ title: string }> = ({ title }) => (
-  <div className="dv-section">
-    <div className="dv-section-header">
-      <div className="dv-section-title">{title}</div>
-    </div>
-    <div
-      style={{
-        padding: '12px 0',
-        fontSize: 11,
-        color: 'var(--dv-text-muted)',
-        textAlign: 'center',
-      }}
-    >
-      Coming soon · sprint 5
-    </div>
-  </div>
-);
 
 export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
   const visible =
@@ -108,11 +94,21 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
             <FrameSection target={target} styleEdit={styleEdit} />
             <AppearanceSection target={target} styleEdit={styleEdit} />
             <FillSection target={target} styleEdit={styleEdit} />
-            <TodoSection title="Border" />
-            <TodoSection title="Radius" />
+            <BorderSectionV2 target={target} styleEdit={styleEdit} />
+            <RadiusSectionV2 target={target} styleEdit={styleEdit} />
           </>
         )}
-        {sub === 'inspect' && <TodoSection title="Box model + code" />}
+        {sub === 'inspect' && (
+          <>
+            <div className="dv-section">
+              <div className="dv-section-header">
+                <div className="dv-section-title">Box model</div>
+              </div>
+              <BoxModelDiagram target={target} />
+            </div>
+            <CodeBlock target={target} />
+          </>
+        )}
       </div>
     </div>
   );

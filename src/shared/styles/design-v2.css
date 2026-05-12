@@ -445,6 +445,11 @@
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   z-index: 2147483647;
+  /* paperx-portal-layer is pointer-events:none so portaled overlays
+     don't trap host-page clicks. The menu itself must re-enable pointer
+     events on itself, the same way V1 popover does via Tailwind. */
+  pointer-events: auto;
+  outline: none;
 }
 .dv-dropdown-item {
   display: flex;

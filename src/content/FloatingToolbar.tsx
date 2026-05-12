@@ -45,7 +45,7 @@ import { DistanceGuides } from './overlays/DistanceGuides';
 import { LocateFlash } from './overlays/LocateFlash';
 import { SnapGuidelines } from './overlays/snap/SnapGuidelines';
 import { SnapStore } from '@/shared/stores/SnapStore';
-import { DesignPanel } from './panels/design';
+import { DesignPanelV2 } from './panels/design-v2';
 import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
 import { TransitionPanel } from './panels/transition';
@@ -170,7 +170,7 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <HoverGuides uiStore={store} selectionStore={selectionStore} />
       <DistanceGuides uiStore={store} selectionStore={selectionStore} />
       <LocateFlash uiStore={store} commentStore={commentStore} />
-      <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
+      <DesignPanelV2 uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <RulerPanel uiStore={store} selectionStore={selectionStore} />
       <CommentPanel
         uiStore={store}
