@@ -1,3 +1,9 @@
+## [0.5.2](https://github.com/z3phr0/paperx/compare/v0.5.1...v0.5.2) (2026-05-12)
+
+
+### Features
+
+* **color-picker:** integrated trigger pill + always-on presets + readable fields ([cba32f0](https://github.com/z3phr0/paperx/commit/cba32f020fd2fae859bd9cafb130874c67f9261b))
 ## [0.5.1](https://github.com/z3phr0/paperx/compare/v0.5.0...v0.5.1) (2026-05-11)
 
 
