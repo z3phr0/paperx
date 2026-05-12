@@ -122,7 +122,6 @@
 }
 .dv-tab:hover {
   color: var(--dv-text);
-  background: var(--dv-bg-input);
 }
 .dv-tab[data-active="true"] {
   color: var(--dv-text);
@@ -474,17 +473,24 @@
   border-radius: 5px;
   text-align: left;
   text-transform: capitalize;
+  transition: background var(--dv-t), color var(--dv-t);
 }
+/* Hover: gold-tinted band — distinctly visible against the dark glass
+   menu background, and keeps the white item text readable. The earlier
+   --dv-bg-input-hover (0.10α white) was a near-no-op on top of the 0.62
+   dark glass. Accent-soft is the same token the active state uses,
+   keyed to gold so the hover affordance reads instantly. */
 .dv-dropdown-item:hover {
-  background: var(--dv-bg-input-hover);
+  background: var(--dv-accent-soft);
+  color: var(--dv-text);
 }
 .dv-dropdown-item[data-active="true"] {
   background: var(--dv-accent-soft);
   color: var(--dv-accent);
 }
-/* Hovering the active row keeps gold text on accent-soft instead of
-   flashing to the gray hover band — that combo would put gold text on
-   a near-white background and shred legibility. */
+/* Active + hover: keep gold text on accent-soft. The default :hover
+   above would swap color to white; this rule wins by specificity so
+   the active row never flashes its label back to white on hover. */
 .dv-dropdown-item[data-active="true"]:hover {
   background: var(--dv-accent-soft);
   color: var(--dv-accent);
