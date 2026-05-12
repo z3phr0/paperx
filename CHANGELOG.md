@@ -1,3 +1,9 @@
+## [0.6.1](https://github.com/z3phr0/paperx/compare/v0.6.0...v0.6.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* **layout:** rename Stack → Flex + replace align icons with lucide ([af8cd6a](https://github.com/z3phr0/paperx/commit/af8cd6a35f0616d2ac3c9da7964fe41774001d57))
 # [0.6.0](https://github.com/z3phr0/paperx/compare/v0.5.2...v0.6.0) (2026-05-12)
 
 
