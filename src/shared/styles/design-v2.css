@@ -464,6 +464,7 @@
   gap: 8px;
   width: 100%;
   padding: 6px 10px;
+  margin-bottom: 2px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -473,7 +474,12 @@
   border-radius: 5px;
   text-align: left;
   text-transform: capitalize;
-  transition: background var(--dv-t), color var(--dv-t);
+  transition:
+    background var(--dv-t),
+    color var(--dv-t);
+}
+.dv-dropdown-item:last-child {
+  margin-bottom: 0;
 }
 /* Hover: gold-tinted band — distinctly visible against the dark glass
    menu background, and keeps the white item text readable. The earlier
