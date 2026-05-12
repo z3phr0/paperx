@@ -1,0 +1,601 @@
+/* ============================================================
+   PAPERX DESIGN-V2 — INSPECTOR DESIGN SYSTEM
+   Source: figma-builder/project/styles.css (Claude Design handoff)
+   Adapted for shadow-DOM scope: `:root` → `:host`; dark-only theme
+   (CLAUDE.md flags light as deprecated); showcase scaffolding (stage,
+   masthead, panels-row) stripped — they're not part of the V2 panel.
+   ============================================================ */
+
+:host {
+  /* Accent — figma-builder chat #1 final pick: gold #D09A06 */
+  --dv-accent: #d09a06;
+  --dv-accent-soft: rgba(208, 154, 6, 0.14);
+  --dv-accent-strong: #b88500;
+
+  /* Density (compact default; comfy via [data-density="comfy"]) */
+  --dv-row-h: 28px;
+  --dv-gap-y: 10px;
+  --dv-label-size: 11px;
+  --dv-value-size: 12px;
+  --dv-section-pad-x: 16px;
+  --dv-section-pad-y: 14px;
+
+  /* Radii — Framer-soft */
+  --dv-r-input: 7px;
+  --dv-r-segment: 9px;
+  --dv-r-section: 10px;
+
+  /* Transitions */
+  --dv-t: 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-density="comfy"] {
+  --dv-row-h: 32px;
+  --dv-gap-y: 14px;
+  --dv-label-size: 12px;
+  --dv-value-size: 13px;
+  --dv-section-pad-x: 18px;
+  --dv-section-pad-y: 16px;
+}
+
+/* -------- DARK THEME (macOS glass) -------- */
+[data-theme="dark"] {
+  --dv-bg: rgba(28, 28, 30, 0.62);
+  --dv-bg-elev: rgba(44, 44, 46, 0.55);
+  --dv-bg-input: rgba(255, 255, 255, 0.06);
+  --dv-bg-input-hover: rgba(255, 255, 255, 0.1);
+  --dv-bg-input-active: rgba(255, 255, 255, 0.14);
+  --dv-bg-segment: rgba(255, 255, 255, 0.05);
+  --dv-bg-segment-active: rgba(255, 255, 255, 0.14);
+  --dv-border: rgba(255, 255, 255, 0.08);
+  --dv-border-strong: rgba(255, 255, 255, 0.16);
+  --dv-text: #f2f2f7;
+  --dv-text-secondary: rgba(235, 235, 245, 0.72);
+  --dv-text-muted: rgba(235, 235, 245, 0.45);
+  --dv-label: rgba(235, 235, 245, 0.55);
+  --dv-divider: rgba(255, 255, 255, 0.07);
+  --dv-shadow-card:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ============ INSPECTOR PANEL ============ */
+.dv-inspector {
+  width: 280px;
+  background: var(--dv-bg);
+  color: var(--dv-text);
+  border: 1px solid var(--dv-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--dv-shadow-card);
+  user-select: none;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--dv-value-size);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  position: relative;
+}
+.dv-inspector::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0) 35%
+  );
+}
+
+/* Tabs (top of inspector, Design / Inspect) */
+.dv-tabs {
+  display: flex;
+  padding: 4px 8px;
+  gap: 2px;
+  border-bottom: 1px solid var(--dv-divider);
+}
+.dv-tab {
+  flex: 1;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dv-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--dv-t);
+  position: relative;
+  font-family: inherit;
+}
+.dv-tab:hover {
+  color: var(--dv-text);
+  background: var(--dv-bg-input);
+}
+.dv-tab[data-active="true"] {
+  color: var(--dv-text);
+  background: var(--dv-bg-input);
+  font-weight: 600;
+}
+.dv-tab[data-active="true"]::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -5px;
+  height: 2px;
+  background: var(--dv-accent);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ============ SECTION ============ */
+.dv-section {
+  padding: var(--dv-section-pad-y) var(--dv-section-pad-x);
+  border-bottom: 1px solid var(--dv-divider);
+}
+.dv-section:last-child {
+  border-bottom: none;
+}
+.dv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+.dv-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dv-text);
+  letter-spacing: -0.005em;
+}
+.dv-section-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* ============ ROW ============ */
+.dv-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-bottom: var(--dv-gap-y);
+}
+.dv-row:last-child {
+  margin-bottom: 0;
+}
+.dv-row-label {
+  font-size: var(--dv-label-size);
+  color: var(--dv-label);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.dv-row-content {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ============ INPUT ============ */
+.dv-input {
+  height: var(--dv-row-h);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: var(--dv-bg-input);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-input);
+  font-size: var(--dv-value-size);
+  color: var(--dv-text);
+  transition:
+    background var(--dv-t),
+    border-color var(--dv-t);
+  cursor: text;
+  min-width: 0;
+  position: relative;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.dv-input:hover {
+  background: var(--dv-bg-input-hover);
+}
+.dv-input:focus-within {
+  background: var(--dv-bg-input-active);
+  border-color: var(--dv-accent);
+  box-shadow: 0 0 0 2px var(--dv-accent-soft);
+}
+.dv-input-prefix {
+  font-size: var(--dv-label-size);
+  color: var(--dv-text-muted);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 12px;
+  flex-shrink: 0;
+}
+.dv-input-prefix svg {
+  display: block;
+}
+.dv-input input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--dv-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+  width: 100%;
+}
+.dv-input-suffix {
+  font-size: var(--dv-label-size);
+  color: var(--dv-text-muted);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+/* ============ SEGMENTED CONTROL ============ */
+.dv-segmented {
+  display: inline-flex;
+  background: var(--dv-bg-segment);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-segment);
+  padding: 2px;
+  height: var(--dv-row-h);
+  gap: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.dv-segmented.dv-full {
+  display: flex;
+  width: 100%;
+}
+.dv-seg-item {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 0 6px;
+  border-radius: calc(var(--dv-r-segment) - 2px);
+  background: transparent;
+  border: none;
+  color: var(--dv-text-secondary);
+  cursor: pointer;
+  transition: all var(--dv-t);
+  font-size: var(--dv-value-size);
+  font-weight: 500;
+  position: relative;
+  font-family: inherit;
+}
+.dv-seg-item:hover {
+  color: var(--dv-text);
+}
+.dv-seg-item[data-active="true"] {
+  background: var(--dv-bg-segment-active);
+  color: var(--dv-text);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.dv-seg-item[data-active="true"][data-accent="true"] {
+  color: var(--dv-accent);
+}
+.dv-seg-item svg {
+  display: block;
+}
+
+/* ============ ICON BUTTON ============ */
+.dv-icon-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--dv-text-secondary);
+  cursor: pointer;
+  transition: all var(--dv-t);
+  padding: 0;
+  flex-shrink: 0;
+}
+.dv-icon-btn:hover {
+  background: var(--dv-bg-input);
+  color: var(--dv-text);
+}
+.dv-icon-btn[data-active="true"] {
+  background: var(--dv-accent-soft);
+  color: var(--dv-accent);
+}
+.dv-icon-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dv-icon-btn.dv-size-md {
+  width: 28px;
+  height: 28px;
+}
+
+/* ============ CHECKBOX ============ */
+.dv-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--dv-value-size);
+  color: var(--dv-text);
+  cursor: pointer;
+}
+.dv-checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--dv-border-strong);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dv-t);
+  flex-shrink: 0;
+}
+.dv-checkbox[data-checked="true"] {
+  background: var(--dv-accent);
+  border-color: var(--dv-accent);
+}
+.dv-checkbox[data-checked="true"] svg {
+  color: white;
+}
+
+/* ============ SLIDER ============ */
+.dv-slider {
+  flex: 1;
+  height: 4px;
+  background: var(--dv-bg-input);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+.dv-slider-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--dv-accent);
+  border-radius: 2px;
+}
+.dv-slider-thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid var(--dv-accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* ============ COLOR SWATCH ============ */
+.dv-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--dv-border-strong);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.dv-swatch-checker {
+  background-image:
+    linear-gradient(45deg, #999 25%, transparent 25%),
+    linear-gradient(-45deg, #999 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #999 75%),
+    linear-gradient(-45deg, transparent 75%, #999 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+}
+
+/* ============ DROPDOWN ============ */
+.dv-dropdown {
+  height: var(--dv-row-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 10px;
+  background: var(--dv-bg-input);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-input);
+  font-size: var(--dv-value-size);
+  color: var(--dv-text);
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  transition: background var(--dv-t);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: inherit;
+}
+.dv-dropdown:hover {
+  background: var(--dv-bg-input-hover);
+}
+.dv-dropdown-menu {
+  background: var(--dv-bg);
+  border: 1px solid var(--dv-border);
+  border-radius: 8px;
+  box-shadow: var(--dv-shadow-card);
+  padding: 4px;
+  min-width: 120px;
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  z-index: 2147483647;
+}
+.dv-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--dv-text);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 5px;
+  text-align: left;
+  text-transform: capitalize;
+}
+.dv-dropdown-item:hover {
+  background: var(--dv-bg-input);
+}
+.dv-dropdown-item[data-active="true"] {
+  background: var(--dv-accent-soft);
+  color: var(--dv-accent);
+}
+
+/* ============ STEPPER ============ */
+.dv-stepper {
+  display: inline-flex;
+  height: var(--dv-row-h);
+  background: var(--dv-bg-input);
+  border-radius: var(--dv-r-input);
+  overflow: hidden;
+}
+.dv-stepper-btn {
+  width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--dv-text-secondary);
+  cursor: pointer;
+  transition: background var(--dv-t);
+}
+.dv-stepper-btn:hover {
+  background: var(--dv-bg-input-hover);
+  color: var(--dv-text);
+}
+.dv-stepper-divider {
+  width: 1px;
+  background: var(--dv-divider);
+}
+
+/* ============ LAYER PROPS DIAGRAM (Inspect sub-tab) ============ */
+.dv-layer-diagram {
+  background: var(--dv-bg-input);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-section);
+  padding: 18px 16px;
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ============ CODE BLOCK (Inspect sub-tab) ============ */
+.dv-code-block {
+  background: var(--dv-bg-input);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-section);
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--dv-text);
+  overflow-x: auto;
+  position: relative;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.dv-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dv-code-line {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}
+.dv-code-num {
+  color: var(--dv-text-muted);
+  user-select: none;
+  width: 14px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.dv-tok-prop {
+  color: var(--dv-text-secondary);
+}
+.dv-tok-val {
+  color: #c792ea;
+}
+.dv-tok-num {
+  color: #f78c6c;
+}
+.dv-tok-str {
+  color: #c3e88d;
+}
+.dv-tok-fn {
+  color: #82aaff;
+}
+.dv-tok-keyword {
+  color: #ff6b9d;
+}
+
+/* ============ SCROLLBAR ============ */
+.dv-scroll {
+  overflow-y: auto;
+}
+.dv-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.dv-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dv-scroll::-webkit-scrollbar-thumb {
+  background: var(--dv-border-strong);
+  border-radius: 4px;
+}
+
+/* ============ UTILITY LAYOUT ============ */
+.dv-flex-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.dv-col-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.dv-col-2-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+.dv-col-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6px;
+}

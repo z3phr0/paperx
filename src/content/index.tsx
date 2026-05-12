@@ -20,6 +20,7 @@ import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import tailwindCss from '@/shared/styles/tailwind.css?inline';
+import designV2Css from '@/shared/styles/design-v2.css?inline';
 import { getContainer } from '@/shared/di/container';
 import { TYPES } from '@/shared/di/tokens';
 import { UIStore } from '@/shared/stores/UIStore';
@@ -50,14 +51,21 @@ function mount(): MountResult {
   const host = ensureHost();
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Inject compiled Tailwind CSS inside the shadow root.
+  // Inject compiled Tailwind CSS + design-v2 stylesheet inside the
+  // shadow root. design-v2 owns the inspector visual system (gold accent,
+  // macOS-glass surfaces) used by the V2 design panel; all selectors are
+  // `dv-`-prefixed so they cannot collide with Tailwind atomics.
   const style = document.createElement('style');
-  style.textContent = tailwindCss;
+  style.textContent = `${tailwindCss}\n${designV2Css}`;
   shadow.appendChild(style);
 
-  // React mount node.
+  // React mount node. theme + density attributes are read by design-v2.css
+  // descendant selectors (`[data-theme="dark"] { --dv-bg: ... }`) so all
+  // V2 design tokens cascade from this element down.
   const reactMount = document.createElement('div');
   reactMount.id = 'paperx-react-root';
+  reactMount.setAttribute('data-theme', 'dark');
+  reactMount.setAttribute('data-density', 'compact');
   shadow.appendChild(reactMount);
 
   // Sibling layer for Radix Portal targets (Popover/Dialog/Tooltip/...).
