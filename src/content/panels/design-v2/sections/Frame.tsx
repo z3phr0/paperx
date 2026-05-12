@@ -267,15 +267,9 @@ export const FrameSection = observer(({ target, styleEdit }: Props) => {
         />
       </div>
 
-      {/* Padding row */}
-      <div
-        className="dv-row"
-        style={{
-          gridTemplateColumns: '64px 1fr',
-          gap: 6,
-          alignItems: 'center',
-        }}
-      >
+      {/* Padding row — label-on-top per the design source's .row default
+          (single grid column); inner content grid stays 1fr/1fr/auto. */}
+      <div className="dv-row">
         <div className="dv-row-label">Padding</div>
         <div
           style={{
@@ -353,16 +347,8 @@ export const FrameSection = observer(({ target, styleEdit }: Props) => {
         </div>
       </div>
 
-      {/* Margin row */}
-      <div
-        className="dv-row"
-        style={{
-          gridTemplateColumns: '64px 1fr',
-          gap: 6,
-          alignItems: 'center',
-          marginBottom: 0,
-        }}
-      >
+      {/* Margin row — label-on-top, same shape as Padding above. */}
+      <div className="dv-row" style={{ marginBottom: 0 }}>
         <div className="dv-row-label">Margin</div>
         <div
           style={{

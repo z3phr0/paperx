@@ -25,6 +25,13 @@ export interface InputProps
   /** Fixed pixel width when `flex={false}`. */
   width?: number;
   containerClassName?: string;
+  /**
+   * Enable design-tool keyboard nudging. When true (default), pressing
+   * `ArrowUp` / `ArrowDown` parses the leading number from the current
+   * value and commits `±1` (or `±10` with `Shift`). Opt out for text
+   * fields (filenames, CSS shorthand strings, etc.).
+   */
+  numeric?: boolean;
 }
 
 export function Input({
@@ -37,6 +44,7 @@ export function Input({
   width,
   className,
   containerClassName,
+  numeric = true,
   ...rest
 }: InputProps): React.ReactElement {
   const [v, setV] = React.useState<string>(String(value));
@@ -46,9 +54,26 @@ export function Input({
   // tests can locate the field and then drill into the `input` child.
   // Spreading the testid onto the bare input forces tests to special-case
   // a leaf locator, which loses the wrapper as a queryable anchor.
-  const { ['data-testid']: testid, ...inputRest } = rest as {
-    'data-testid'?: string;
-  } & typeof rest;
+  const { ['data-testid']: testid, onKeyDown: callerOnKeyDown, ...inputRest } =
+    rest as {
+      'data-testid'?: string;
+      onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+    } & typeof rest;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    callerOnKeyDown?.(e);
+    if (e.defaultPrevented || !numeric) return;
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const sign = e.key === 'ArrowUp' ? 1 : -1;
+    const delta = e.shiftKey ? 10 : 1;
+    const m = v.match(/^(-?[\d.]+)/);
+    const cur = m && m[1] != null ? parseFloat(m[1]) : 0;
+    const nextNum = Math.round(cur + sign * delta);
+    const next = String(nextNum);
+    setV(next);
+    onChange?.(next);
+  };
 
   return (
     <div
@@ -63,6 +88,7 @@ export function Input({
           setV(e.target.value);
           onChange?.(e.target.value);
         }}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={className}
         {...inputRest}

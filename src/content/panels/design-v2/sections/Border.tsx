@@ -132,18 +132,6 @@ export const BorderSectionV2 = observer(({ target, styleEdit }: Props) => {
             </div>
           );
         })}
-        {entries.length === 0 && (
-          <div
-            style={{
-              padding: '6px 0',
-              fontSize: 11,
-              color: 'var(--dv-text-muted)',
-              textAlign: 'center',
-            }}
-          >
-            No border. Click + to add one.
-          </div>
-        )}
       </div>
     </Section>
   );
