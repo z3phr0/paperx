@@ -1,22 +1,10 @@
 /**
- * Radius section — border-radius editor with an enable-on-add empty
- * state and two editing modes.
+ * Radius section — border-radius editor.
  *
- * Empty state (radius effectively unset — all four corners read 0):
- * renders only the section header — Label "Radius" + a `+` button.
- * Clicking `+` seeds all four corners with `8px` and reveals the
- * editor below. This mirrors Figma's Corner Radius panel grammar.
- *
- * Editor state — top-right toggle button (Maximize2 / Minimize2 glyph)
- * flips between:
- *   1. unified — single Slider + numeric input; applies to all four
- *      corner properties (4 separate apply() calls so ChangeLog gets
- *      4 rows, matching BoxModel link UX).
- *   2. per-corner — 4 inputs labeled with corner glyphs (TL/TR/BL/BR);
- *      each writes one corner property independently.
- *
- * Mode state is component-local. Switching modes does not commit
- * anything; user re-enters values to apply.
+ * Behavior delegated to `useRadiusEditor` in `@/shared/design-logic/radius`
+ * so the legacy DesignPanel and the design-v2 inspector share one state
+ * machine. Visual layout and `data-testid` set are unchanged from the
+ * pre-refactor implementation.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
@@ -25,29 +13,14 @@ import { Maximize2, Minimize2, Plus } from 'lucide-react';
 import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
 import { Slider } from '@/shared/ui/Slider';
+import {
+  type Corner,
+  CORNERS,
+  DEFAULT_RADIUS_PX,
+  SLIDER_MAX,
+  useRadiusEditor,
+} from '@/shared/design-logic/radius';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
-import { pxToInt, formatLengthPx } from '@/shared/types/numeric';
-
-type Corner = 'tl' | 'tr' | 'br' | 'bl';
-
-const CORNERS: ReadonlyArray<Corner> = ['tl', 'tr', 'br', 'bl'];
-
-const CORNER_TO_PROP: Record<Corner, string> = {
-  tl: 'border-top-left-radius',
-  tr: 'border-top-right-radius',
-  br: 'border-bottom-right-radius',
-  bl: 'border-bottom-left-radius',
-};
-
-const SLIDER_MAX = 64;
-
-function read(target: HTMLElement, prop: string): string {
-  try {
-    return (getComputedStyle(target).getPropertyValue(prop) ?? '').trim();
-  } catch {
-    return '';
-  }
-}
 
 interface Props {
   target: HTMLElement;
@@ -59,8 +32,6 @@ interface Props {
  * affected. Used as the prefix icon next to each per-corner input.
  */
 function CornerGlyph({ corner }: { corner: Corner }): React.ReactElement {
-  // All four glyphs are the same 14x14 frame; we rotate it so the
-  // rounded corner lands in the requested quadrant.
   const rotation: Record<Corner, number> = { tl: 0, tr: 90, br: 180, bl: 270 };
   return (
     <svg
@@ -79,53 +50,17 @@ function CornerGlyph({ corner }: { corner: Corner }): React.ReactElement {
   );
 }
 
-function broadcastAll(target: HTMLElement, styleEdit: IStyleEditService, value: string): void {
-  for (const c of CORNERS) styleEdit.apply(target, CORNER_TO_PROP[c], value);
-}
-
-const DEFAULT_RADIUS_PX = '8';
-
 export const RadiusSection = observer(({ target, styleEdit }: Props) => {
-  // Seed each corner from computed style — read once per target swap.
-  const seed = React.useMemo(() => {
-    const out: Record<Corner, string> = { tl: '', tr: '', br: '', bl: '' };
-    for (const c of CORNERS) out[c] = pxToInt(read(target, CORNER_TO_PROP[c]));
-    return out;
-  }, [target]);
-
-  const [radius, setRadius] = React.useState<Record<Corner, string>>(seed);
-  const [mode, setMode] = React.useState<'unified' | 'per-corner'>('unified');
-
-  React.useEffect(() => setRadius(seed), [seed]);
-
-  // Unified value: when all corners agree show that number, else blank.
-  const allEqual = radius.tl !== '' && radius.tl === radius.tr && radius.tr === radius.br && radius.br === radius.bl;
-  const unifiedValue = allEqual ? radius.tl : '';
-  const unifiedNumber = unifiedValue === '' ? 0 : Math.min(SLIDER_MAX, Number(unifiedValue) || 0);
-
-  // "Enabled" — at least one corner has a non-zero radius. We treat
-  // 0 / '' uniformly as the empty state so the user can opt back in
-  // via the `+` button after explicitly removing all rounding.
-  const enabled = CORNERS.some((c) => {
-    const v = radius[c];
-    return v !== '' && Number(v) > 0;
-  });
-
-  const commitUnified = (raw: string) => {
-    setRadius({ tl: raw, tr: raw, br: raw, bl: raw });
-    if (raw.trim() === '') return;
-    const formatted = formatLengthPx(raw, { allowNegative: false });
-    if (formatted == null) return;
-    broadcastAll(target, styleEdit, formatted);
-  };
-
-  const commitCorner = (corner: Corner, raw: string) => {
-    setRadius((prev) => ({ ...prev, [corner]: raw }));
-    if (raw.trim() === '') return;
-    const formatted = formatLengthPx(raw, { allowNegative: false });
-    if (formatted == null) return;
-    styleEdit.apply(target, CORNER_TO_PROP[corner], formatted);
-  };
+  const {
+    radius,
+    mode,
+    setMode,
+    enabled,
+    unifiedValue,
+    unifiedNumber,
+    commitUnified,
+    commitCorner,
+  } = useRadiusEditor({ target, styleEdit });
 
   return (
     <div className="flex flex-col gap-2">
