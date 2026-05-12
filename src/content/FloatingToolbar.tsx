@@ -46,7 +46,6 @@ import { LocateFlash } from './overlays/LocateFlash';
 import { SnapGuidelines } from './overlays/snap/SnapGuidelines';
 import { SnapStore } from '@/shared/stores/SnapStore';
 import { DesignPanelV2 } from './panels/design-v2';
-import { RulerPanel } from './panels/ruler';
 import { CommentPanel } from './panels/comment';
 import { TransitionPanel } from './panels/transition';
 import { ChangeLog } from './panels/changelog';
@@ -171,7 +170,10 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <DistanceGuides uiStore={store} selectionStore={selectionStore} />
       <LocateFlash uiStore={store} commentStore={commentStore} />
       <DesignPanelV2 uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
-      <RulerPanel uiStore={store} selectionStore={selectionStore} />
+      {/* Legacy V1 RulerPanel retired in design-v2: ruler mode now
+          renders the V2 Inspect view (BoxModel + CodeBlock) through
+          DesignPanelV2 above. The V1 file is kept in tree for rollback
+          but no longer mounted. */}
       <CommentPanel
         uiStore={store}
         selectionStore={selectionStore}

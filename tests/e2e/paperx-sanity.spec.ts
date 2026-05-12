@@ -251,7 +251,12 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     }
   });
 
-  test('ruler mode renders read-only measurements for the selected element', async () => {
+  // V1 RulerPanel retired in design-v2: ruler mode now shows the V2
+  // Inspect view (BoxModel + CSS/TW/JSX code block) inside the V2
+  // inspector. The "Bounding box" / "Viewport offsets" section grammar
+  // is V1-only. New V2 ruler smoke (see "design-v2 ruler" describe)
+  // covers the equivalent panel-mount-on-selection flow.
+  test.skip('ruler mode renders read-only measurements for the selected element', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
@@ -1369,6 +1374,32 @@ test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
  * an inline `width` and surfaces a ChangeLog row — the same single-
  * writer path the retired V1 BoxModel test exercised.
  */
+test.describe('paperx design-v2 ruler mode', () => {
+  test('design-v2: ruler mode renders the V2 Inspect view (BoxModel + CodeBlock), no sub-tab strip', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-ruler"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+
+      const panel = page.locator('[data-testid="paperx-v2-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+      // In ruler mode the panel exposes data-mode="ruler" so the
+      // sub-tab strip is suppressed; no Design / Inspect buttons.
+      await expect(panel).toHaveAttribute('data-mode', 'ruler');
+      await expect(page.locator('[data-testid="paperx-v2-subtab-design"]')).toHaveCount(0);
+      await expect(page.locator('[data-testid="paperx-v2-subtab-inspect"]')).toHaveCount(0);
+
+      // Inspect content (BoxModel + CodeBlock) is rendered directly.
+      await expect(page.locator('[data-testid="paperx-v2-box-model"]')).toBeVisible();
+      await expect(page.locator('[data-testid="paperx-v2-code-block"]')).toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  });
+});
+
 test.describe('paperx design-v2 inspector', () => {
   test('design-v2: panel mounts with Design + Inspect sub-tabs and Frame.W commits a width edit', async () => {
     const ctx = await launchWithExtension();

@@ -1,18 +1,18 @@
 /**
  * DesignPanelV2 — the Claude-Design-handoff Inspector reborn.
  *
- * Visibility contract matches the legacy DesignPanel: rendered only when
- * `uiStore.mode === 'design'` AND `SelectionStore.selected != null`.
+ * Visibility:
+ *   - `mode === 'design'`: renders [Design | Inspect] sub-tabs above the
+ *     scroll area. Design sub-tab = Frame/Appearance/Fill/Border/Radius;
+ *     Inspect sub-tab = BoxModel + CSS/Tailwind/JSX code block.
+ *   - `mode === 'ruler'`: same shell, no sub-tab strip — the panel
+ *     always shows the Inspect content. Ruler is observation-only so
+ *     the editing sub-tab is hidden.
+ *
+ * In both modes a non-null `SelectionStore.selected` is required.
  * Pixel dimensions / visual identity follow figma-builder/project/
- * paperx-inspector.jsx — 280px width, macOS-glass surface (via .dv-
- * inspector), top-of-card [Design | Inspect] sub-tab strip.
- *
- * Each sub-tab renders a different content set:
- *   - design:  Frame / Appearance / Fill / Border (Sprint 5) / Radius (Sprint 5)
- *   - inspect: BoxModel + CSS/Tailwind/Code (Sprint 5)
- *
- * The shell ships in Sprint 4 with Border / Radius / Inspect rendered as
- * "TODO" markers; Sprint 5 swaps them for real implementations.
+ * paperx-inspector.jsx — 280px width, macOS-glass surface (.dv-
+ * inspector).
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
@@ -37,19 +37,38 @@ interface Props {
   styleEdit: IStyleEditService;
 }
 
+const InspectContent: React.FC<{ target: HTMLElement }> = ({ target }) => (
+  <>
+    <div className="dv-section">
+      <div className="dv-section-header">
+        <div className="dv-section-title">Box model</div>
+      </div>
+      <BoxModelDiagram target={target} />
+    </div>
+    <CodeBlock target={target} />
+  </>
+);
+
 export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
+  const isDesign = uiStore.mode === 'design';
+  const isRuler = uiStore.mode === 'ruler';
   const visible =
-    uiStore.visible && uiStore.mode === 'design' && selectionStore.selected != null;
+    uiStore.visible && (isDesign || isRuler) && selectionStore.selected != null;
   const [sub, setSub] = React.useState<SubTab>('design');
 
   if (!visible) return null;
   const target = selectionStore.selected!;
+
+  // In ruler mode there is no sub-tab strip; the panel is always the
+  // Inspect view. In design mode the sub-tab decides the body.
+  const showInspect = isRuler || sub === 'inspect';
 
   return (
     <div
       role="region"
       aria-label="paperx design panel V2"
       data-testid="paperx-v2-panel"
+      data-mode={uiStore.mode ?? undefined}
       className="dv-inspector"
       style={{
         position: 'fixed',
@@ -65,31 +84,33 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="dv-tabs">
-        {(
-          [
-            ['design', 'Design'],
-            ['inspect', 'Inspect'],
-          ] as ReadonlyArray<[SubTab, string]>
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className="dv-tab"
-            data-active={sub === id || undefined}
-            data-testid={`paperx-v2-subtab-${id}`}
-            onClick={() => setSub(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {isDesign && (
+        <div className="dv-tabs">
+          {(
+            [
+              ['design', 'Design'],
+              ['inspect', 'Inspect'],
+            ] as ReadonlyArray<[SubTab, string]>
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className="dv-tab"
+              data-active={sub === id || undefined}
+              data-testid={`paperx-v2-subtab-${id}`}
+              onClick={() => setSub(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div
         className="dv-scroll"
         style={{ flex: 1, minHeight: 0 }}
-        data-testid={`paperx-v2-content-${sub}`}
+        data-testid={`paperx-v2-content-${showInspect ? 'inspect' : 'design'}`}
       >
-        {sub === 'design' && (
+        {!showInspect && (
           <>
             <FrameSection target={target} styleEdit={styleEdit} />
             <AppearanceSection target={target} styleEdit={styleEdit} />
@@ -98,17 +119,7 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
             <RadiusSectionV2 target={target} styleEdit={styleEdit} />
           </>
         )}
-        {sub === 'inspect' && (
-          <>
-            <div className="dv-section">
-              <div className="dv-section-header">
-                <div className="dv-section-title">Box model</div>
-              </div>
-              <BoxModelDiagram target={target} />
-            </div>
-            <CodeBlock target={target} />
-          </>
-        )}
+        {showInspect && <InspectContent target={target} />}
       </div>
     </div>
   );
