@@ -1,3 +1,9 @@
+# [0.8.0](https://github.com/z3phr0/paperx/compare/v0.7.1...v0.8.0) (2026-05-12)
+
+
+### Features
+
+* **overlays:** figma-style hover guides + distance labels ([4f1eafe](https://github.com/z3phr0/paperx/commit/4f1eafe36e2a55a1baa010e8a3dcd1d7c2203b33)), closes [#F24E1E](https://github.com/z3phr0/paperx/issues/F24E1E) [#FFFFFF](https://github.com/z3phr0/paperx/issues/FFFFFF) [#1F2937](https://github.com/z3phr0/paperx/issues/1F2937) [#E5E7EB](https://github.com/z3phr0/paperx/issues/E5E7EB)
 ## [0.7.1](https://github.com/z3phr0/paperx/compare/v0.7.0...v0.7.1) (2026-05-12)
 
 
