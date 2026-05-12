@@ -84,4 +84,17 @@ chrome.commands.onCommand.addListener(async (command) => {
   setTabEnabled(tab.id, !cur);
 });
 
+// E2E hook: expose setTabEnabled on globalThis so Playwright can drive
+// per-tab state via `worker.evaluate`. Browser key events from Playwright
+// don't reach Chrome's commands dispatcher (which listens at the OS
+// keyboard level), so the test suite can't toggle via the hotkey path.
+// This hook has no surface in production (SW context is unreachable
+// from page JS), and paperx is a dev tool, so leaving it always-on is
+// acceptable. Remove if a stricter posture is required later.
+declare global {
+  // eslint-disable-next-line no-var
+  var __paperxSetTabEnabled: typeof setTabEnabled | undefined;
+}
+globalThis.__paperxSetTabEnabled = setTabEnabled;
+
 export {};

@@ -54,17 +54,49 @@ async function launchWithExtension(): Promise<BrowserContext> {
   return ctx;
 }
 
+async function getServiceWorker(ctx: BrowserContext) {
+  const existing = ctx.serviceWorkers()[0];
+  if (existing) return existing;
+  return await ctx.waitForEvent('serviceworker', { timeout: 10_000 });
+}
+
+/**
+ * v0.7.0+: paperx is OFF on every newly opened tab by default. The SW
+ * owns per-tab state in an in-memory map. Playwright key events don't
+ * reach Chrome's commands dispatcher, so we drive state via the
+ * `__paperxSetTabEnabled` hook exposed on the SW's globalThis.
+ */
+async function enablePaperxOnPage(ctx: BrowserContext, page: Page): Promise<void> {
+  const worker = await getServiceWorker(ctx);
+  // Bring the page to focus so chrome.tabs.query({active:true}) returns it.
+  await page.bringToFront();
+  const tabId = await worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab?.id ?? null;
+  });
+  if (tabId == null) throw new Error('enablePaperxOnPage: no active tab');
+  await worker.evaluate(
+    (id) => {
+      const setEnabled = (globalThis as Record<string, unknown>)['__paperxSetTabEnabled'];
+      if (typeof setEnabled === 'function') {
+        (setEnabled as (id: number, value: boolean) => void)(id, true);
+      }
+    },
+    tabId,
+  );
+  await page.locator('paperx-root').waitFor({ state: 'attached', timeout: 10_000 });
+  await page.locator('[data-testid="paperx-toolbar"]').waitFor({ timeout: 10_000 });
+}
+
 async function openFixture(ctx: BrowserContext): Promise<Page> {
   // Persistent context spawns with a default about:blank tab; reuse it
   // when present, otherwise open a new one.
   const existing = ctx.pages()[0];
   const page = existing ?? (await ctx.newPage());
   await page.goto(FIXTURE_URL);
-  // Wait for paperx-root to be appended by the content script.
-  // Bootstrap defaults to visible:true so the toolbar should pop up
-  // shortly after document_idle.
-  await page.locator('paperx-root').waitFor({ state: 'attached', timeout: 10_000 });
-  await page.locator('[data-testid="paperx-toolbar"]').waitFor({ timeout: 10_000 });
+  // v0.7.0: paperx is off by default on every tab — explicitly enable
+  // for the fixture before the toolbar can be expected.
+  await enablePaperxOnPage(ctx, page);
   return page;
 }
 
@@ -460,8 +492,8 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
     try {
       const page = await openFixture(ctx);
 
-      // Mode-agnostic: don't switch modes, just hover. Picker is active
-      // whenever paperx is visible.
+      // v0.7.0: picker is gated on a non-null mode — pick design first.
+      await page.locator('[data-testid="paperx-mode-design"]').click();
       const target = page.locator('[data-uid="hero-title-001"]');
       await target.hover();
 
@@ -969,44 +1001,99 @@ test.describe('paperx Comment fix (v0.2.2)', () => {
 });
 
 /**
- * v0.2.4 — Popup global ON/OFF switch.
+ * v0.7.0 — Popup operates on the active tab's per-tab enabled state.
+ * Default is OFF for every newly opened tab.
  */
-test.describe('paperx popup (v0.2.4)', () => {
-  test('Popup loads with ON state and the big toggle disables the content script', async () => {
+test.describe('paperx popup (v0.7.0 per-tab)', () => {
+  test('Popup loads with OFF state on a fresh tab and the big toggle flips it', async () => {
     const ctx = await launchWithExtension();
     try {
-      // Open a fixture tab first to confirm the toolbar mounts by default.
-      const fixture = await openFixture(ctx);
-      await expect(fixture.locator('[data-testid="paperx-toolbar"]')).toBeVisible({
-        timeout: 10_000,
-      });
-
-      // Resolve the extension id via the MV3 service worker URL.
-      const sw =
-        ctx.serviceWorkers()[0] ??
-        (await ctx.waitForEvent('serviceworker', { timeout: 10_000 }));
+      const sw = await getServiceWorker(ctx);
       const extId = new URL(sw.url()).host;
 
-      // Open the popup HTML in a separate page (Chrome doesn't render the
-      // real action popup in headless contexts; navigating directly to
-      // the bundled HTML is the canonical playwright workaround).
+      // Open the popup HTML in a separate page. In Playwright this becomes
+      // the active tab — the popup's chrome.tabs.query reads it as its own
+      // operating target. SW returns false (default) for a never-enabled tab.
       const popup = await ctx.newPage();
       await popup.goto(`chrome-extension://${extId}/src/popup/index.html`);
 
       const toggle = popup.locator('[data-testid="paperx-popup-toggle"]');
       await expect(toggle).toBeVisible({ timeout: 5_000 });
-      await expect(toggle).toHaveText('ON');
-
-      // Flip to OFF — the storage write should propagate to the content
-      // script in the other tab and tear paperx-root down entirely.
-      await toggle.click();
       await expect(toggle).toHaveText('OFF');
-      await expect(fixture.locator('paperx-root')).toHaveCount(0, { timeout: 5_000 });
 
-      // Flip back to ON — paperx-root re-mounts.
+      // Toggle ON via the big button — SW updates state for the popup tab.
       await toggle.click();
-      await expect(toggle).toHaveText('ON');
-      await expect(fixture.locator('paperx-root')).toHaveCount(1, { timeout: 5_000 });
+      await expect(toggle).toHaveText('ON', { timeout: 5_000 });
+
+      // Toggle OFF again — round-trip.
+      await toggle.click();
+      await expect(toggle).toHaveText('OFF', { timeout: 5_000 });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('SW per-tab enable hook drives content-script mount + unmount on a fixture tab', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const fixture = ctx.pages()[0] ?? (await ctx.newPage());
+      await fixture.goto(FIXTURE_URL);
+      // Default OFF — paperx-root not mounted.
+      await expect(fixture.locator('paperx-root')).toHaveCount(0, { timeout: 3_000 });
+
+      // Enable via the SW test hook.
+      await enablePaperxOnPage(ctx, fixture);
+      await expect(fixture.locator('[data-testid="paperx-toolbar"]')).toBeVisible({
+        timeout: 5_000,
+      });
+
+      // Disable via the SW test hook directly.
+      const worker = await getServiceWorker(ctx);
+      const tabId = await worker.evaluate(async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        return tab?.id ?? null;
+      });
+      await worker.evaluate(
+        (id) => {
+          const fn = (globalThis as Record<string, unknown>)['__paperxSetTabEnabled'];
+          (fn as (id: number, value: boolean) => void)(id!, false);
+        },
+        tabId,
+      );
+      await expect(fixture.locator('paperx-root')).toHaveCount(0, { timeout: 5_000 });
+    } finally {
+      await ctx.close();
+    }
+  });
+});
+
+/**
+ * v0.7.0 — Toolbar mode buttons toggle deselect when clicked twice.
+ */
+test.describe('paperx mode toggle (v0.7.0)', () => {
+  test('Clicking the active mode button deselects the mode and hides the panel', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      const designBtn = page.locator('[data-testid="paperx-mode-design"]');
+      await designBtn.click();
+      await expect(designBtn).toHaveAttribute('aria-pressed', 'true');
+
+      // Select an element so the DesignPanel mounts.
+      await page.locator('[data-uid="cta-btn-003"]').click();
+      await expect(page.getByRole('region', { name: 'paperx design panel' })).toBeVisible({
+        timeout: 5_000,
+      });
+
+      // Click the active Design button again — toggle deselect.
+      await designBtn.click();
+      await expect(designBtn).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.getByRole('region', { name: 'paperx design panel' })).toHaveCount(0, {
+        timeout: 5_000,
+      });
+      // Toolbar pill itself stays visible.
+      await expect(page.locator('[data-testid="paperx-toolbar"]')).toBeVisible();
     } finally {
       await ctx.close();
     }
