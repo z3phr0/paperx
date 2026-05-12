@@ -140,7 +140,12 @@
 
 /* ============ SECTION ============ */
 .dv-section {
-  padding: var(--dv-section-pad-y) var(--dv-section-pad-x);
+  /* Top padding intentionally smaller than bottom: the header itself
+     occupies ~20px + 12px margin-bottom before body content, which
+     makes a symmetric 14/14 padding read as "heavy on top." Trim the
+     top so the optical balance (divider-top → first body content vs.
+     last body content → divider-bottom) lines up. */
+  padding: 4px var(--dv-section-pad-x) var(--dv-section-pad-y);
   border-bottom: 1px solid var(--dv-divider);
 }
 .dv-section:last-child {
