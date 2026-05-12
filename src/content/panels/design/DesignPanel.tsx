@@ -23,7 +23,7 @@ import { BoxModelSection } from './sections/BoxModel';
 import { TypographySection } from './sections/Typography';
 import { BackgroundSection } from './sections/Background';
 import { BorderSection } from './sections/Border';
-import { EffectsSection } from './sections/Effects';
+import { RadiusSection } from './sections/Radius';
 
 interface SectionConfig {
   id: string;
@@ -44,7 +44,7 @@ const SECTIONS: readonly SectionConfig[] = [
   { id: 'typography', title: 'Typography', render: (t, s) => <TypographySection target={t} styleEdit={s} /> },
   { id: 'background', title: 'Background', render: (t, s) => <BackgroundSection target={t} styleEdit={s} /> },
   { id: 'border', title: 'Border', selfHeader: true, render: (t, s) => <BorderSection target={t} styleEdit={s} /> },
-  { id: 'effects', title: 'Radius', render: (t, s) => <EffectsSection target={t} styleEdit={s} /> },
+  { id: 'radius', title: 'Radius', selfHeader: true, render: (t, s) => <RadiusSection target={t} styleEdit={s} /> },
 ];
 
 interface Props {

@@ -1,7 +1,14 @@
 /**
- * Effects section — border-radius editor with two modes.
+ * Radius section — border-radius editor with an enable-on-add empty
+ * state and two editing modes.
  *
- * Top-right toggle button (Maximize2 / Minimize2 glyph) flips between:
+ * Empty state (radius effectively unset — all four corners read 0):
+ * renders only the section header — Label "Radius" + a `+` button.
+ * Clicking `+` seeds all four corners with `8px` and reveals the
+ * editor below. This mirrors Figma's Corner Radius panel grammar.
+ *
+ * Editor state — top-right toggle button (Maximize2 / Minimize2 glyph)
+ * flips between:
  *   1. unified — single Slider + numeric input; applies to all four
  *      corner properties (4 separate apply() calls so ChangeLog gets
  *      4 rows, matching BoxModel link UX).
@@ -13,7 +20,7 @@
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, Plus } from 'lucide-react';
 
 import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
@@ -76,7 +83,9 @@ function broadcastAll(target: HTMLElement, styleEdit: IStyleEditService, value: 
   for (const c of CORNERS) styleEdit.apply(target, CORNER_TO_PROP[c], value);
 }
 
-export const EffectsSection = observer(({ target, styleEdit }: Props) => {
+const DEFAULT_RADIUS_PX = '8';
+
+export const RadiusSection = observer(({ target, styleEdit }: Props) => {
   // Seed each corner from computed style — read once per target swap.
   const seed = React.useMemo(() => {
     const out: Record<Corner, string> = { tl: '', tr: '', br: '', bl: '' };
@@ -93,6 +102,14 @@ export const EffectsSection = observer(({ target, styleEdit }: Props) => {
   const allEqual = radius.tl !== '' && radius.tl === radius.tr && radius.tr === radius.br && radius.br === radius.bl;
   const unifiedValue = allEqual ? radius.tl : '';
   const unifiedNumber = unifiedValue === '' ? 0 : Math.min(SLIDER_MAX, Number(unifiedValue) || 0);
+
+  // "Enabled" — at least one corner has a non-zero radius. We treat
+  // 0 / '' uniformly as the empty state so the user can opt back in
+  // via the `+` button after explicitly removing all rounding.
+  const enabled = CORNERS.some((c) => {
+    const v = radius[c];
+    return v !== '' && Number(v) > 0;
+  });
 
   const commitUnified = (raw: string) => {
     setRadius({ tl: raw, tr: raw, br: raw, bl: raw });
@@ -114,23 +131,36 @@ export const EffectsSection = observer(({ target, styleEdit }: Props) => {
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label className="normal-case tracking-normal">Radius</Label>
-        <button
-          type="button"
-          data-testid="paperx-radius-mode-toggle"
-          onClick={() => setMode((m) => (m === 'unified' ? 'per-corner' : 'unified'))}
-          aria-pressed={mode === 'per-corner'}
-          title={mode === 'unified' ? 'Switch to per-corner' : 'Switch to unified'}
-          className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-input text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          {mode === 'unified' ? (
-            <Maximize2 className="h-3 w-3" />
-          ) : (
-            <Minimize2 className="h-3 w-3" />
-          )}
-        </button>
+        {enabled ? (
+          <button
+            type="button"
+            data-testid="paperx-radius-mode-toggle"
+            onClick={() => setMode((m) => (m === 'unified' ? 'per-corner' : 'unified'))}
+            aria-pressed={mode === 'per-corner'}
+            title={mode === 'unified' ? 'Switch to per-corner' : 'Switch to unified'}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-input text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {mode === 'unified' ? (
+              <Maximize2 className="h-3 w-3" />
+            ) : (
+              <Minimize2 className="h-3 w-3" />
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            data-testid="paperx-radius-add"
+            onClick={() => commitUnified(DEFAULT_RADIUS_PX)}
+            aria-label="Enable radius"
+            title="Enable radius (8px)"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-input text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        )}
       </div>
 
-      {mode === 'unified' ? (
+      {!enabled ? null : mode === 'unified' ? (
         <div className="flex items-center gap-2" data-testid="paperx-radius-unified">
           <div className="flex-1">
             <Slider
@@ -180,4 +210,4 @@ export const EffectsSection = observer(({ target, styleEdit }: Props) => {
     </div>
   );
 });
-EffectsSection.displayName = 'EffectsSection';
+RadiusSection.displayName = 'RadiusSection';
