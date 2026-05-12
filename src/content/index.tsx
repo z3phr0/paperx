@@ -26,7 +26,7 @@ import { UIStore } from '@/shared/stores/UIStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { PAPERX_TOGGLE, type PaperxMessage } from '@/shared/types/messages';
 import { PortalProvider } from '@/shared/ui/portal';
-import { onEnabledChange, readEnabled } from '@/shared/storage/enabled';
+import { onTabEnabledChange, requestTabEnabled } from '@/shared/storage/enabled';
 
 const HOST_TAG = 'paperx-root';
 
@@ -132,11 +132,14 @@ function startMounted(): void {
   console.info('[paperx/content] mounted in shadow DOM');
 }
 
-void readEnabled().then((on) => {
+// Per-tab init: ask the SW whether THIS tab is enabled. Default OFF.
+// SW tracks state in an in-memory `Map<tabId, boolean>`; the content
+// script relies on `sender.tab.id` so we don't pass a tabId here.
+void requestTabEnabled().then((on) => {
   if (on) startMounted();
 });
 
-onEnabledChange((on) => {
+onTabEnabledChange((on) => {
   if (on) startMounted();
   else unmount();
 });

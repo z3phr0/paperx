@@ -1,47 +1,81 @@
 /**
- * Global enabled state — persisted in chrome.storage.local so the
- * switch is shared across every tab the user has open and across
- * extension reloads. Listeners use chrome.storage.onChanged for
- * cross-tab broadcast (Chrome's canonical mechanism — no message
- * fan-out from the service worker needed).
+ * Per-tab enabled state — message-based helpers backed by the SW's
+ * in-memory `Map<tabId, boolean>`. Default OFF for every new tab; SW
+ * clears the entry on `chrome.tabs.onRemoved`. State is volatile across
+ * SW dormancy (~30s idle): if the SW restarts, all tabs go back to OFF.
  *
- * Default is `true` (extension on) so first-install users see the
- * floating toolbar without having to flip the popup.
+ * Three call sites:
+ *   - Content script: `requestTabEnabled()` on init (sender.tab supplies
+ *     the tabId), then `onTabEnabledChange(cb)` for SW broadcasts.
+ *   - Popup: `requestTabEnabled(tabId)` / `requestToggleTabEnabled(tabId)`
+ *     after `chrome.tabs.query` — popup is in extension context so it
+ *     must pass tabId explicitly.
+ *   - SW (background): owns the source of truth in `enabledByTab`.
  */
+import {
+  PAPERX_ENABLED_CHANGED,
+  PAPERX_QUERY_ENABLED,
+  PAPERX_SET_ENABLED,
+  PAPERX_TOGGLE_ENABLED,
+  type PaperxMessage,
+} from '@/shared/types/messages';
 
-export const ENABLED_KEY = 'paperx_enabled' as const;
-export const DEFAULT_ENABLED = true;
+interface QueryResp { enabled: boolean }
+interface ToggleResp { enabled: boolean }
 
-export async function readEnabled(): Promise<boolean> {
+/**
+ * Ask the SW for the current tab's enabled state. When called from the
+ * content script, the SW reads `sender.tab.id` automatically. When
+ * called from the popup, pass the active tab id explicitly.
+ */
+export async function requestTabEnabled(tabId?: number): Promise<boolean> {
   try {
-    const v = await chrome.storage.local.get(ENABLED_KEY);
-    const raw = v[ENABLED_KEY];
-    if (typeof raw === 'boolean') return raw;
-    return DEFAULT_ENABLED;
+    const resp = (await chrome.runtime.sendMessage({
+      type: PAPERX_QUERY_ENABLED,
+      tabId,
+    } satisfies PaperxMessage)) as QueryResp | undefined;
+    return resp?.enabled ?? false;
   } catch {
-    return DEFAULT_ENABLED;
+    return false;
   }
 }
 
-export async function writeEnabled(next: boolean): Promise<void> {
-  await chrome.storage.local.set({ [ENABLED_KEY]: next });
+export async function requestSetTabEnabled(tabId: number, value: boolean): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({
+      type: PAPERX_SET_ENABLED,
+      tabId,
+      value,
+    } satisfies PaperxMessage);
+  } catch {
+    // SW unreachable — caller can retry; nothing to gracefully fall back to.
+  }
+}
+
+export async function requestToggleTabEnabled(tabId: number): Promise<boolean> {
+  try {
+    const resp = (await chrome.runtime.sendMessage({
+      type: PAPERX_TOGGLE_ENABLED,
+      tabId,
+    } satisfies PaperxMessage)) as ToggleResp | undefined;
+    return resp?.enabled ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Subscribe to changes of the enabled flag across tabs. Returns an
- * unsubscribe function.
+ * Subscribe to SW broadcasts for this tab's enabled state. Returns an
+ * unsubscribe function. The SW only sends `PAPERX_ENABLED_CHANGED` to
+ * the affected tab, so the callback fires for state flips that target
+ * "this" tab only.
  */
-export function onEnabledChange(cb: (next: boolean) => void): () => void {
-  const handler = (
-    changes: Record<string, chrome.storage.StorageChange>,
-    area: chrome.storage.AreaName,
-  ) => {
-    if (area !== 'local') return;
-    const entry = changes[ENABLED_KEY];
-    if (!entry) return;
-    const next = typeof entry.newValue === 'boolean' ? entry.newValue : DEFAULT_ENABLED;
-    cb(next);
+export function onTabEnabledChange(cb: (enabled: boolean) => void): () => void {
+  const handler = (msg: PaperxMessage) => {
+    if (msg?.type === PAPERX_ENABLED_CHANGED) {
+      cb(msg.enabled);
+    }
   };
-  chrome.storage.onChanged.addListener(handler);
-  return () => chrome.storage.onChanged.removeListener(handler);
+  chrome.runtime.onMessage.addListener(handler);
+  return () => chrome.runtime.onMessage.removeListener(handler);
 }

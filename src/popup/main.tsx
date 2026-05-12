@@ -1,47 +1,77 @@
 /**
- * paperx popup — global enable/disable switch.
+ * paperx popup — per-tab enable/disable switch.
  *
- * Reads + writes `paperx_enabled` in chrome.storage.local. Content
- * scripts subscribe to chrome.storage.onChanged separately, so the
- * popup doesn't need to dispatch any cross-context messages; the
- * storage change propagates across every tab automatically.
+ * On open, queries the SW for the active tab's enabled state and renders
+ * a big circular toggle. Clicking flips the active tab's state via
+ * `requestToggleTabEnabled`; the SW broadcasts to that tab so the
+ * content script mounts / unmounts. Other tabs are unaffected.
+ *
+ * The same toggle can be invoked without opening the popup at all via
+ * `Cmd+Shift+P` / `Ctrl+Shift+P` — the SW handles `chrome.commands`
+ * directly. The popup is the discoverable entry point; the hotkey is
+ * the high-frequency one.
  */
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import {
-  DEFAULT_ENABLED,
-  onEnabledChange,
-  readEnabled,
-  writeEnabled,
+  onTabEnabledChange,
+  requestTabEnabled,
+  requestToggleTabEnabled,
 } from '@/shared/storage/enabled';
 
 declare const __PAPERX_VERSION__: string;
 
+async function getActiveTabId(): Promise<number | null> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function App(): React.ReactElement {
-  const [enabled, setEnabled] = React.useState<boolean>(DEFAULT_ENABLED);
+  const [enabled, setEnabled] = React.useState<boolean>(false);
   const [loading, setLoading] = React.useState(true);
+  const [tabId, setTabId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    void readEnabled().then((v) => {
-      setEnabled(v);
+    void (async () => {
+      const id = await getActiveTabId();
+      setTabId(id);
+      if (id == null) {
+        setLoading(false);
+        return;
+      }
+      const cur = await requestTabEnabled(id);
+      setEnabled(cur);
       setLoading(false);
-    });
-    return onEnabledChange((next) => setEnabled(next));
+    })();
+    // The popup runs in the extension context; the SW broadcasts
+    // PAPERX_ENABLED_CHANGED into tabs (not popup), but onMessage in
+    // the popup also fires when a runtime.sendMessage is in flight.
+    // Subscribe defensively — if the user toggles via hotkey while
+    // the popup is open, sync state.
+    return onTabEnabledChange((next) => setEnabled(next));
   }, []);
 
   const toggle = async () => {
-    const next = !enabled;
-    setEnabled(next); // optimistic
-    await writeEnabled(next);
+    if (tabId == null) return;
+    setEnabled((prev) => !prev); // optimistic
+    await requestToggleTabEnabled(tabId);
   };
 
-  const label = loading ? 'Loading…' : enabled ? 'paperx is ON' : 'paperx is OFF';
+  const label = loading
+    ? 'Loading…'
+    : enabled
+      ? 'paperx is ON on this tab'
+      : 'paperx is OFF on this tab';
   const subLabel = loading
     ? ''
     : enabled
-      ? 'Floating toolbar active on every tab.'
-      : 'No injection. Pages render untouched.';
+      ? 'Floating toolbar active here. Other tabs unaffected.'
+      : 'Press Cmd+Shift+P to toggle. Default OFF on every new tab.';
 
   return (
     <div
@@ -82,10 +112,10 @@ function App(): React.ReactElement {
       <button
         type="button"
         onClick={toggle}
-        disabled={loading}
+        disabled={loading || tabId == null}
         data-testid="paperx-popup-toggle"
         aria-pressed={enabled}
-        aria-label={enabled ? 'Disable paperx' : 'Enable paperx'}
+        aria-label={enabled ? 'Disable paperx on this tab' : 'Enable paperx on this tab'}
         style={{
           width: 140,
           height: 140,
