@@ -1,12 +1,12 @@
 /**
- * Layout section — Framer-style Stack (flexbox) + Grid editor.
+ * Layout section — Flex + Grid editor.
  *
- * Type segmented sets `display: flex` (Stack) or `display: grid` (Grid).
- * When the host element has neither, the picker defaults visually to
- * Stack but no `display` is written until the user clicks Type or
- * touches a sub-control.
+ * Type segmented sets `display: flex` or `display: grid`. When the
+ * host element has neither, the picker defaults visually to Flex but
+ * no `display` is written until the user clicks Type or touches a
+ * sub-control.
  *
- * Stack mode controls: Direction, Distribute, Align, Wrap, Gap, Padding.
+ * Flex mode controls: Direction, Distribute, Align, Wrap, Gap, Padding.
  * Grid mode controls:  Masonry, Columns, Gap X/Y, Padding.
  *
  * Padding has a uniform / per-side toggle (Figma-style). Uniform writes
@@ -21,12 +21,16 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
+  AlignStartHorizontal,
   ArrowDown,
   ArrowRight,
   Maximize2,
   Minus,
   Plus,
   Square,
+  type LucideIcon,
 } from 'lucide-react';
 
 import { Input } from '@/shared/ui/Input';
@@ -34,10 +38,9 @@ import { Label } from '@/shared/ui/Label';
 import { Segmented, type SegmentedOption } from '@/shared/ui/Segmented';
 import { Slider } from '@/shared/ui/Slider';
 import { IconButton } from '@/shared/ui/IconButton';
-import { cn } from '@/shared/ui/utils';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
 
-type LayoutType = 'stack' | 'grid';
+type LayoutType = 'flex' | 'grid';
 type FlexDirection = 'row' | 'column';
 type WrapValue = 'wrap' | 'nowrap';
 type AlignItems = 'flex-start' | 'center' | 'flex-end';
@@ -52,7 +55,7 @@ type Masonry = 'yes' | 'no';
 type PaddingMode = 'uniform' | 'per-side';
 
 const TYPE_OPTIONS: ReadonlyArray<SegmentedOption<LayoutType>> = [
-  { value: 'stack', label: <span data-testid="paperx-layout-type-stack">Stack</span> },
+  { value: 'flex', label: <span data-testid="paperx-layout-type-flex">Flex</span> },
   { value: 'grid', label: <span data-testid="paperx-layout-type-grid">Grid</span> },
 ];
 
@@ -96,10 +99,14 @@ const DISTRIBUTE_OPTIONS: ReadonlyArray<{ value: JustifyContent; label: string }
   { value: 'space-evenly', label: 'Space evenly' },
 ];
 
-const ALIGN_ENTRIES: ReadonlyArray<{ value: AlignItems; label: string }> = [
-  { value: 'flex-start', label: 'Align start' },
-  { value: 'center', label: 'Align center' },
-  { value: 'flex-end', label: 'Align end' },
+const ALIGN_ENTRIES: ReadonlyArray<{
+  value: AlignItems;
+  label: string;
+  Icon: LucideIcon;
+}> = [
+  { value: 'flex-start', label: 'Align start', Icon: AlignStartHorizontal },
+  { value: 'center', label: 'Align center', Icon: AlignCenterHorizontal },
+  { value: 'flex-end', label: 'Align end', Icon: AlignEndHorizontal },
 ];
 
 function read(target: HTMLElement, prop: string): string {
@@ -119,7 +126,7 @@ function pxNum(raw: string): string {
 
 function detectType(target: HTMLElement): LayoutType | null {
   const d = read(target, 'display');
-  if (d === 'flex' || d === 'inline-flex') return 'stack';
+  if (d === 'flex' || d === 'inline-flex') return 'flex';
   if (d === 'grid' || d === 'inline-grid') return 'grid';
   return null;
 }
@@ -146,7 +153,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
   // === Hooks (all before any conditional render) =========================
 
   // Seed values — recomputed when target changes.
-  const seedType = React.useMemo<LayoutType>(() => detectType(target) ?? 'stack', [target]);
+  const seedType = React.useMemo<LayoutType>(() => detectType(target) ?? 'flex', [target]);
   const seedDirection = React.useMemo<FlexDirection>(() => {
     const v = read(target, 'flex-direction');
     return v === 'column' || v === 'column-reverse' ? 'column' : 'row';
@@ -228,7 +235,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
   // === Writers ===========================================================
 
   const writeDisplay = (next: LayoutType) => {
-    styleEdit.apply(target, 'display', next === 'stack' ? 'flex' : 'grid');
+    styleEdit.apply(target, 'display', next === 'flex' ? 'flex' : 'grid');
   };
 
   const handleTypeChange = (next: LayoutType) => {
@@ -300,7 +307,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
         <Segmented<LayoutType> value={type} onChange={handleTypeChange} options={TYPE_OPTIONS} />
       </div>
 
-      {type === 'stack' && (
+      {type === 'flex' && (
         <>
           <div className={fieldRow}>
             <Label className={labelCol}>Direction</Label>
@@ -337,7 +344,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
           <div className={fieldRow}>
             <Label className={labelCol}>Align</Label>
             <div className="inline-flex items-center gap-1">
-              {ALIGN_ENTRIES.map(({ value: v, label }) => (
+              {ALIGN_ENTRIES.map(({ value: v, label, Icon }) => (
                 <IconButton
                   key={v}
                   ariaLabel={label}
@@ -349,15 +356,7 @@ export const LayoutSection = observer(({ target, styleEdit }: Props) => {
                     styleEdit.apply(target, 'align-items', v);
                   }}
                 >
-                  <span
-                    className={cn(
-                      'inline-block h-3 w-3 rounded-sm bg-current',
-                      v === 'flex-start' && 'self-start',
-                      v === 'center' && 'self-center',
-                      v === 'flex-end' && 'self-end',
-                    )}
-                    aria-hidden
-                  />
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
                 </IconButton>
               ))}
             </div>
