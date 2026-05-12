@@ -484,11 +484,7 @@ export const BorderSection = observer(({ target, styleEdit }: Props) => {
         </div>
       </div>
 
-      {entries.length === 0 ? (
-        <div className="rounded-sm border border-dashed border-input bg-white/[0.02] px-2 py-3 text-center text-[10px] text-muted-foreground">
-          No border. Click + to add one.
-        </div>
-      ) : (
+      {entries.length > 0 && (
         <div className="flex flex-col gap-2" data-testid="paperx-border-rows">
           {entries.map((entry) => (
             <Row
