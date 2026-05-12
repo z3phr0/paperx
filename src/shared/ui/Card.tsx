@@ -30,7 +30,7 @@ export const CardHeader = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex items-center justify-between px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide',
+      'flex items-center justify-between px-2.5 py-1.5 text-xs font-semibold',
       className,
     )}
     {...props}
