@@ -13,7 +13,11 @@ import type { ToolMode } from '@/shared/types/modes';
 @injectable()
 export class UIStore {
   visible = false;
-  mode: ToolMode = 'design';
+  // Nullable: `null` means no active panel mode — the toolbar pill is
+  // visible but neither the picker outline nor any side panel render.
+  // Clicking an active toolbar mode button toggles back to `null` so
+  // users can collapse the panels without leaving paperx entirely.
+  mode: ToolMode | null = null;
   /**
    * Comment id whose target should pulse a Locate flash overlay.
    * Auto-clears via setTimeout so consumers don't have to debounce.
@@ -31,6 +35,7 @@ export class UIStore {
       show: action,
       hide: action,
       setMode: action,
+      toggleMode: action,
       flashAt: action,
       clearFlash: action,
       isActive: computed,
@@ -53,8 +58,13 @@ export class UIStore {
     this.visible = false;
   }
 
-  setMode(next: ToolMode): void {
+  setMode(next: ToolMode | null): void {
     this.mode = next;
+  }
+
+  /** Click-active-deselects: same value -> null, otherwise switch. */
+  toggleMode(next: ToolMode): void {
+    this.mode = this.mode === next ? null : next;
   }
 
   flashAt(commentId: string, durationMs = 1800): void {

@@ -65,7 +65,9 @@ export const ChangeLogDrawer = observer(
     const records = changeLogUIStore.filteredRecords;
 
     const sidePanelVisible =
-      SIDE_PANEL_MODES.has(uiStore.mode) && selectionStore.selected != null;
+      uiStore.mode != null &&
+      SIDE_PANEL_MODES.has(uiStore.mode) &&
+      selectionStore.selected != null;
     const rightOffset = sidePanelVisible
       ? 16 + SIDE_PANEL_WIDTH + PANEL_GUTTER
       : 16;
