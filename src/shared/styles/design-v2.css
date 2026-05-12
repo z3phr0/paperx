@@ -126,7 +126,6 @@
 }
 .dv-tab[data-active="true"] {
   color: var(--dv-text);
-  background: var(--dv-bg-input);
   font-weight: 600;
 }
 .dv-tab[data-active="true"]::after {
@@ -147,6 +146,15 @@
 }
 .dv-section:last-child {
   border-bottom: none;
+}
+/* Collapsed-body section (Border / Radius empty state): the header
+   stays, but the empty tail is tightened so the next divider doesn't
+   sit 26px below the title row. */
+.dv-section[data-collapsed="true"] {
+  padding-bottom: 4px;
+}
+.dv-section[data-collapsed="true"] .dv-section-header {
+  margin-bottom: 0;
 }
 .dv-section-header {
   display: flex;
@@ -468,9 +476,16 @@
   text-transform: capitalize;
 }
 .dv-dropdown-item:hover {
-  background: var(--dv-bg-input);
+  background: var(--dv-bg-input-hover);
 }
 .dv-dropdown-item[data-active="true"] {
+  background: var(--dv-accent-soft);
+  color: var(--dv-accent);
+}
+/* Hovering the active row keeps gold text on accent-soft instead of
+   flashing to the gray hover band — that combo would put gold text on
+   a near-white background and shred legibility. */
+.dv-dropdown-item[data-active="true"]:hover {
   background: var(--dv-accent-soft);
   color: var(--dv-accent);
 }

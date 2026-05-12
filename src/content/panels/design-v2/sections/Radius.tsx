@@ -60,6 +60,7 @@ export const RadiusSectionV2 = observer(({ target, styleEdit }: Props) => {
     <Section
       title="Radius"
       data-testid="paperx-radius"
+      collapsed={!enabled}
       actions={
         enabled ? (
           <IconButton

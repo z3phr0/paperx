@@ -48,6 +48,7 @@ export const BorderSectionV2 = observer(({ target, styleEdit }: Props) => {
     <Section
       title="Border"
       data-testid="paperx-border"
+      collapsed={entries.length === 0}
       actions={
         <>
           <Dropdown

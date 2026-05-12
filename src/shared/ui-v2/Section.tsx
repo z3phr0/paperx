@@ -10,6 +10,13 @@ export interface SectionProps {
   children?: React.ReactNode;
   className?: string;
   'data-testid'?: string;
+  /**
+   * When true, the section signals its body is empty/disabled and
+   * collapsed-state CSS tightens the vertical rhythm (smaller
+   * padding-bottom, zero header margin-bottom). Used by Border /
+   * Radius for their enable-on-add empty state.
+   */
+  collapsed?: boolean;
 }
 
 export function Section({
@@ -17,12 +24,14 @@ export function Section({
   actions,
   children,
   className,
+  collapsed,
   ...rest
 }: SectionProps): React.ReactElement {
   return (
     <div
       className={`dv-section${className ? ` ${className}` : ''}`}
       data-testid={rest['data-testid']}
+      data-collapsed={collapsed || undefined}
     >
       <div className="dv-section-header">
         <div className="dv-section-title">{title}</div>

@@ -246,15 +246,8 @@ export const FrameSection = observer(({ target, styleEdit }: Props) => {
         </div>
       </div>
 
-      {/* Position L/R/T/B */}
-      <div
-        className="dv-row"
-        style={{
-          gridTemplateColumns: '64px 1fr',
-          gap: 6,
-          alignItems: 'center',
-        }}
-      >
+      {/* Position L/R/T/B — label-on-top, matches Padding / Margin. */}
+      <div className="dv-row">
         <div className="dv-row-label">Position</div>
         <Quad
           propL="left"
