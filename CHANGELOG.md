@@ -1,3 +1,10 @@
+# [0.7.0](https://github.com/z3phr0/paperx/compare/v0.6.1...v0.7.0) (2026-05-12)
+
+
+### Features
+
+* **toolbar:** clicking active mode deselects (mode = null) ([d7f32eb](https://github.com/z3phr0/paperx/commit/d7f32ebfafbd289dac771a735cc71d5808914f1e))
+* **uistore:** nullable mode + toggleMode action ([d802d2f](https://github.com/z3phr0/paperx/commit/d802d2ff8a074128cdc98b091215e3b240fb1c87))
 ## [0.6.1](https://github.com/z3phr0/paperx/compare/v0.6.0...v0.6.1) (2026-05-12)
 
 
