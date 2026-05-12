@@ -1,24 +1,25 @@
 /**
  * paperx — background service worker (MV3)
  *
- * Owns per-tab `enabled` state in an in-memory `Map<tabId, boolean>`.
- * Default is OFF (missing entry -> false). Cleared per-tab on close.
+ * Owns per-tab `enabled` state in `chrome.storage.session` (keyed by
+ * `paperx_tab_${tabId}`). Session storage is browser-process-local,
+ * survives SW dormancy, and clears on browser quit — exactly the
+ * lifecycle paperx wants. Default OFF for every newly opened tab.
  *
- * Message handlers:
- *   - PAPERX_QUERY_ENABLED   -> returns { enabled } for sender's tab (or
+ * Why session over an in-memory Map (v0.7.0 design): the popup needs
+ * to read state on a click reaction. Going through a SW message wakes
+ * a dormant SW (50-300ms cost). Session storage reads are local IPC
+ * (~5ms) — popup can read directly with no SW round trip.
+ *
+ * Message handlers (still SW-mediated for writes + content-script reads):
+ *   - PAPERX_QUERY_ENABLED   -> { enabled } for sender's tab (or
  *                                  explicit tabId from popup)
  *   - PAPERX_SET_ENABLED     -> set + broadcast PAPERX_ENABLED_CHANGED
  *   - PAPERX_TOGGLE_ENABLED  -> flip + broadcast
  *
  * Keyboard command:
  *   - `toggle-paperx` (Cmd+Shift+P / Ctrl+Shift+P) — flips the active
- *     tab's enabled state directly. The popup is no longer the only
- *     entry point for toggling.
- *
- * Known limitation: MV3 SWs sleep after ~30s of inactivity; on next
- * wake, `enabledByTab` is empty (every tab reads OFF). Acceptable
- * trade-off for the simpler in-memory model. Upgrade to
- * `chrome.storage.session` if SW dormancy becomes a UX issue.
+ *     tab's enabled state directly.
  */
 import {
   PAPERX_ENABLED_CHANGED,
@@ -28,10 +29,25 @@ import {
   type PaperxMessage,
 } from '@/shared/types/messages';
 
-const enabledByTab = new Map<number, boolean>();
+const SESSION_KEY_PREFIX = 'paperx_tab_';
+const keyFor = (tabId: number): string => `${SESSION_KEY_PREFIX}${tabId}`;
 
-function setTabEnabled(tabId: number, value: boolean): void {
-  enabledByTab.set(tabId, value);
+async function getTabEnabled(tabId: number): Promise<boolean> {
+  try {
+    const k = keyFor(tabId);
+    const r = await chrome.storage.session.get(k);
+    return r[k] === true;
+  } catch {
+    return false;
+  }
+}
+
+async function setTabEnabled(tabId: number, value: boolean): Promise<void> {
+  try {
+    await chrome.storage.session.set({ [keyFor(tabId)]: value });
+  } catch (err) {
+    console.warn('[paperx/bg] storage.session.set failed', err);
+  }
   // Notify the affected tab's content script. Failure is fine: the
   // content script may not be injected (chrome:// page, file:// blocked, etc).
   chrome.tabs
@@ -47,7 +63,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  enabledByTab.delete(tabId);
+  void chrome.storage.session.remove(keyFor(tabId)).catch(() => {});
 });
 
 chrome.runtime.onMessage.addListener(
@@ -56,22 +72,23 @@ chrome.runtime.onMessage.addListener(
       const tabId = msg.tabId ?? sender.tab?.id;
       if (tabId == null) {
         sendResponse({ enabled: false });
-        return;
+        return true;
       }
-      sendResponse({ enabled: enabledByTab.get(tabId) ?? false });
-      return;
+      void getTabEnabled(tabId).then((enabled) => sendResponse({ enabled }));
+      return true; // async response
     }
     if (msg?.type === PAPERX_SET_ENABLED) {
-      setTabEnabled(msg.tabId, msg.value);
-      sendResponse({ ok: true });
-      return;
+      void setTabEnabled(msg.tabId, msg.value).then(() => sendResponse({ ok: true }));
+      return true;
     }
     if (msg?.type === PAPERX_TOGGLE_ENABLED) {
-      const cur = enabledByTab.get(msg.tabId) ?? false;
-      const next = !cur;
-      setTabEnabled(msg.tabId, next);
-      sendResponse({ enabled: next });
-      return;
+      void (async () => {
+        const cur = await getTabEnabled(msg.tabId);
+        const next = !cur;
+        await setTabEnabled(msg.tabId, next);
+        sendResponse({ enabled: next });
+      })();
+      return true;
     }
   },
 );
@@ -80,20 +97,15 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'toggle-paperx') return;
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
-  const cur = enabledByTab.get(tab.id) ?? false;
-  setTabEnabled(tab.id, !cur);
+  const cur = await getTabEnabled(tab.id);
+  await setTabEnabled(tab.id, !cur);
 });
 
 // E2E hook: expose setTabEnabled on globalThis so Playwright can drive
-// per-tab state via `worker.evaluate`. Browser key events from Playwright
-// don't reach Chrome's commands dispatcher (which listens at the OS
-// keyboard level), so the test suite can't toggle via the hotkey path.
-// This hook has no surface in production (SW context is unreachable
-// from page JS), and paperx is a dev tool, so leaving it always-on is
-// acceptable. Remove if a stricter posture is required later.
+// per-tab state via `worker.evaluate`. Now async (awaits session write).
 declare global {
   // eslint-disable-next-line no-var
-  var __paperxSetTabEnabled: typeof setTabEnabled | undefined;
+  var __paperxSetTabEnabled: ((tabId: number, value: boolean) => Promise<void>) | undefined;
 }
 globalThis.__paperxSetTabEnabled = setTabEnabled;
 

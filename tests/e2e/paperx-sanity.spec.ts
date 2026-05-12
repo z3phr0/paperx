@@ -76,10 +76,10 @@ async function enablePaperxOnPage(ctx: BrowserContext, page: Page): Promise<void
   });
   if (tabId == null) throw new Error('enablePaperxOnPage: no active tab');
   await worker.evaluate(
-    (id) => {
+    async (id) => {
       const setEnabled = (globalThis as Record<string, unknown>)['__paperxSetTabEnabled'];
       if (typeof setEnabled === 'function') {
-        (setEnabled as (id: number, value: boolean) => void)(id, true);
+        await (setEnabled as (id: number, value: boolean) => Promise<void>)(id, true);
       }
     },
     tabId,
@@ -1054,9 +1054,9 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
         return tab?.id ?? null;
       });
       await worker.evaluate(
-        (id) => {
+        async (id) => {
           const fn = (globalThis as Record<string, unknown>)['__paperxSetTabEnabled'];
-          (fn as (id: number, value: boolean) => void)(id!, false);
+          await (fn as (id: number, value: boolean) => Promise<void>)(id!, false);
         },
         tabId,
       );

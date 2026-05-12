@@ -16,7 +16,7 @@ import { createRoot } from 'react-dom/client';
 
 import {
   onTabEnabledChange,
-  requestTabEnabled,
+  readTabEnabledFromSession,
   requestToggleTabEnabled,
 } from '@/shared/storage/enabled';
 
@@ -32,21 +32,23 @@ async function getActiveTabId(): Promise<number | null> {
 }
 
 function App(): React.ReactElement {
+  // Optimistic OFF as the initial state — matches the new-tab default
+  // for the per-tab semantics. Reading actual state from
+  // `chrome.storage.session` happens in parallel and silently updates
+  // (typically < 30ms total: tabs.query + session.get, both local IPC).
+  // No spinner / "Loading…" UI: prior v0.7.0 design awaited the SW which
+  // could be 50-300ms cold start; v0.7.1 reads session storage directly
+  // so the toggle is interactive on first paint.
   const [enabled, setEnabled] = React.useState<boolean>(false);
-  const [loading, setLoading] = React.useState(true);
   const [tabId, setTabId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     void (async () => {
       const id = await getActiveTabId();
+      if (id == null) return;
       setTabId(id);
-      if (id == null) {
-        setLoading(false);
-        return;
-      }
-      const cur = await requestTabEnabled(id);
+      const cur = await readTabEnabledFromSession(id);
       setEnabled(cur);
-      setLoading(false);
     })();
     // The popup runs in the extension context; the SW broadcasts
     // PAPERX_ENABLED_CHANGED into tabs (not popup), but onMessage in
@@ -62,16 +64,12 @@ function App(): React.ReactElement {
     await requestToggleTabEnabled(tabId);
   };
 
-  const label = loading
-    ? 'Loading…'
-    : enabled
-      ? 'paperx is ON on this tab'
-      : 'paperx is OFF on this tab';
-  const subLabel = loading
-    ? ''
-    : enabled
-      ? 'Floating toolbar active here. Other tabs unaffected.'
-      : 'Press Cmd+Shift+P to toggle. Default OFF on every new tab.';
+  const label = enabled
+    ? 'paperx is ON on this tab'
+    : 'paperx is OFF on this tab';
+  const subLabel = enabled
+    ? 'Floating toolbar active here. Other tabs unaffected.'
+    : 'Press Cmd+Shift+P to toggle. Default OFF on every new tab.';
 
   return (
     <div
@@ -112,7 +110,7 @@ function App(): React.ReactElement {
       <button
         type="button"
         onClick={toggle}
-        disabled={loading || tabId == null}
+        disabled={tabId == null}
         data-testid="paperx-popup-toggle"
         aria-pressed={enabled}
         aria-label={enabled ? 'Disable paperx on this tab' : 'Enable paperx on this tab'}
@@ -130,7 +128,7 @@ function App(): React.ReactElement {
           fontSize: 22,
           fontWeight: 700,
           letterSpacing: '0.1em',
-          cursor: loading ? 'wait' : 'pointer',
+          cursor: tabId == null ? 'wait' : 'pointer',
           outline: 'none',
           transition: 'transform 120ms ease, box-shadow 200ms ease, border-color 200ms ease',
           boxShadow: enabled
@@ -148,7 +146,7 @@ function App(): React.ReactElement {
           (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
         }}
       >
-        {loading ? '…' : enabled ? 'ON' : 'OFF'}
+        {enabled ? 'ON' : 'OFF'}
       </button>
 
       <footer style={{ alignSelf: 'stretch', textAlign: 'center' }}>

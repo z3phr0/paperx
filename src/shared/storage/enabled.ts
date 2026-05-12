@@ -1,16 +1,25 @@
 /**
  * Per-tab enabled state — message-based helpers backed by the SW's
- * in-memory `Map<tabId, boolean>`. Default OFF for every new tab; SW
- * clears the entry on `chrome.tabs.onRemoved`. State is volatile across
- * SW dormancy (~30s idle): if the SW restarts, all tabs go back to OFF.
+ * `chrome.storage.session` store (keyed by `paperx_tab_${tabId}`).
+ * Default OFF for every new tab; SW clears the entry on
+ * `chrome.tabs.onRemoved`. Session storage survives SW dormancy and
+ * clears on browser quit.
  *
- * Three call sites:
- *   - Content script: `requestTabEnabled()` on init (sender.tab supplies
- *     the tabId), then `onTabEnabledChange(cb)` for SW broadcasts.
- *   - Popup: `requestTabEnabled(tabId)` / `requestToggleTabEnabled(tabId)`
- *     after `chrome.tabs.query` — popup is in extension context so it
- *     must pass tabId explicitly.
- *   - SW (background): owns the source of truth in `enabledByTab`.
+ * Read paths:
+ *   - Popup: `readTabEnabledFromSession(tabId)` — direct local read,
+ *     no SW round trip. Used to keep popup-open latency under 30ms
+ *     even when the SW is dormant.
+ *   - Content script: `requestTabEnabled()` — message-based (content
+ *     scripts cannot reach `chrome.storage.session`; SW resolves via
+ *     `sender.tab.id`). The wake cost is amortized into page load.
+ *
+ * Write paths (always go through SW so it can broadcast
+ * PAPERX_ENABLED_CHANGED to the affected tab in the same step):
+ *   - `requestSetTabEnabled(tabId, value)`
+ *   - `requestToggleTabEnabled(tabId)`
+ *
+ * Subscribe:
+ *   - `onTabEnabledChange(cb)` — listens for `PAPERX_ENABLED_CHANGED`.
  */
 import {
   PAPERX_ENABLED_CHANGED,
@@ -22,6 +31,25 @@ import {
 
 interface QueryResp { enabled: boolean }
 interface ToggleResp { enabled: boolean }
+
+const SESSION_KEY_PREFIX = 'paperx_tab_';
+const sessionKeyFor = (tabId: number): string => `${SESSION_KEY_PREFIX}${tabId}`;
+
+/**
+ * Direct, fast read from `chrome.storage.session`. Use from popup /
+ * SW / options where the API is available; content scripts must
+ * fall back to `requestTabEnabled` (SW message). Falls through to
+ * `false` on any error so the caller is always safe to render.
+ */
+export async function readTabEnabledFromSession(tabId: number): Promise<boolean> {
+  try {
+    const k = sessionKeyFor(tabId);
+    const r = await chrome.storage.session.get(k);
+    return r[k] === true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Ask the SW for the current tab's enabled state. When called from the
