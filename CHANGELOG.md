@@ -1,3 +1,9 @@
+## [0.7.1](https://github.com/z3phr0/paperx/compare/v0.7.0...v0.7.1) (2026-05-12)
+
+
+### Performance Improvements
+
+* **popup:** direct chrome.storage.session reads + optimistic render ([19f5a09](https://github.com/z3phr0/paperx/commit/19f5a0973809659d26a1ad05306a02764f2233d8))
 # [0.7.0](https://github.com/z3phr0/paperx/compare/v0.6.1...v0.7.0) (2026-05-12)
 
 
