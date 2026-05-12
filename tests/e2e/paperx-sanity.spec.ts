@@ -1101,6 +1101,71 @@ test.describe('paperx mode toggle (v0.7.0)', () => {
 });
 
 /**
+ * v0.8.0 — Figma-style measurement guides (hover lines + distance labels).
+ */
+test.describe('paperx measurement guides (v0.8.0)', () => {
+  test('Hover shows 4 dashed full-viewport guides; selecting + hover shows distance labels', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      // Enter design mode so the picker activates and guides render.
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // Hover element A — 4 hover guide lines appear (no selection yet,
+      // no distance labels).
+      const targetA = page.locator('[data-uid="hero-title-001"]');
+      await targetA.hover();
+      for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+        await expect(page.locator(`[data-testid="paperx-hover-guide-${side}"]`)).toBeVisible({
+          timeout: 3_000,
+        });
+      }
+      // No distance labels rendered with nothing selected.
+      await expect(page.locator('[data-testid^="paperx-distance-"]')).toHaveCount(0);
+
+      // Select A by clicking it (picker click captures).
+      await targetA.click();
+
+      // Hover a different element B — distance labels appear in
+      // addition to B's hover guides. At least one of the four labels
+      // is visible (concrete count depends on geometry).
+      const targetB = page.locator('[data-uid="cta-btn-003"]');
+      await targetB.hover();
+      await expect(page.locator('[data-testid="paperx-hover-guide-top"]')).toBeVisible({
+        timeout: 3_000,
+      });
+      const labelCount = await page.locator('[data-testid^="paperx-distance-"]').count();
+      expect(labelCount).toBeGreaterThanOrEqual(1);
+
+      // Self-hover (B is now hovered AND we click to make it the
+      // selection) — no distance labels (hover === selected).
+      await targetB.click();
+      await targetB.hover();
+      await expect(page.locator('[data-testid^="paperx-distance-"]')).toHaveCount(0, {
+        timeout: 3_000,
+      });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Guides do not render in transition mode', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+      await page.locator('[data-testid="paperx-mode-transition"]').click();
+      await page.locator('[data-uid="hero-title-001"]').hover();
+      await expect(page.locator('[data-testid="paperx-hover-guide-top"]')).toHaveCount(0, {
+        timeout: 3_000,
+      });
+    } finally {
+      await ctx.close();
+    }
+  });
+});
+
+/**
  * v0.5.0 — Border multi-row editor + react-color Sketch ColorPicker.
  */
 test.describe('paperx Border + ColorPicker (v0.5.0)', () => {

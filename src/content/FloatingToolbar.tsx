@@ -40,6 +40,8 @@ import { ResizeHandles } from './overlays/ResizeHandles';
 import { RotateHandle } from './overlays/RotateHandle';
 import { CommentGuides } from './overlays/CommentGuides';
 import { SpacingGuides } from './overlays/SpacingGuides';
+import { HoverGuides } from './overlays/HoverGuides';
+import { DistanceGuides } from './overlays/DistanceGuides';
 import { LocateFlash } from './overlays/LocateFlash';
 import { SnapGuidelines } from './overlays/snap/SnapGuidelines';
 import { SnapStore } from '@/shared/stores/SnapStore';
@@ -165,6 +167,8 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <RotateHandle uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <CommentGuides uiStore={store} selectionStore={selectionStore} />
       <SpacingGuides uiStore={store} selectionStore={selectionStore} />
+      <HoverGuides uiStore={store} selectionStore={selectionStore} />
+      <DistanceGuides uiStore={store} selectionStore={selectionStore} />
       <LocateFlash uiStore={store} commentStore={commentStore} />
       <DesignPanel uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       <RulerPanel uiStore={store} selectionStore={selectionStore} />
