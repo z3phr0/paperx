@@ -92,7 +92,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
             aria-label={TOOL_MODE_LABELS[m]}
             title={TOOL_MODE_LABELS[m]}
             data-testid={`paperx-mode-${m}`}
-            onClick={() => store.setMode(m)}
+            onClick={() => store.toggleMode(m)}
             className={cn('rounded-full')}
           >
             <Icon className="h-4 w-4" />

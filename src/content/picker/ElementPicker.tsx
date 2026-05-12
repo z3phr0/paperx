@@ -58,7 +58,10 @@ function asHostPageElement(el: Element | null): HTMLElement | null {
 }
 
 export const ElementPicker = observer(({ uiStore, selectionStore }: Props) => {
-  const active = uiStore.visible;
+  // Picker is gated on BOTH visibility and an active mode. mode === null
+  // means the user has deselected the active panel button — picker
+  // outline should disappear too, so the page is fully unobstructed.
+  const active = uiStore.visible && uiStore.mode != null;
   const selected = selectionStore.selected;
 
   // Window-scoped listeners: hover, click, esc, scroll, resize.
