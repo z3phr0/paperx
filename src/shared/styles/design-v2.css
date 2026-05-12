@@ -448,14 +448,11 @@
   background: var(--dv-bg-input-hover);
 }
 .dv-dropdown-menu {
-  /* Layered background so the popup reads as an input-like surface
-     regardless of what's behind it on the host page: the inner gradient
-     paints the same 6%-white overlay that --dv-bg-input gives an Input
-     field, and the outer rgba lays down a near-opaque dark base so item
-     text never fights with bright host content bleeding through. */
-  background:
-    linear-gradient(var(--dv-bg-input), var(--dv-bg-input)),
-    rgba(28, 28, 30, 0.92);
+  /* Match the Input field's recipe verbatim — same overlay token and
+     blur intensity — so the popup inherits identical glass treatment
+     when it sits on top of the inspector. No extra base layer; the
+     inspector's --dv-bg behind plays the role of the dark base. */
+  background: var(--dv-bg-input);
   border: 1px solid var(--dv-border);
   border-radius: 8px;
   /* Light shadow — just enough to lift the outline; the heavy
@@ -465,8 +462,8 @@
     0 0 0 1px rgba(255, 255, 255, 0.04);
   padding: 4px;
   min-width: 120px;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 2147483647;
   /* paperx-portal-layer is pointer-events:none so portaled overlays
      don't trap host-page clicks. The menu itself must re-enable pointer
