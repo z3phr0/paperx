@@ -12,7 +12,6 @@
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { Card, CardHeader, CardContent } from '@/shared/ui/Card';
 import type { UIStore } from '@/shared/stores/UIStore';
@@ -29,15 +28,23 @@ import { EffectsSection } from './sections/Effects';
 interface SectionConfig {
   id: string;
   title: string;
+  // When the section owns its own internal title + action row (e.g.,
+  // Border with its `+` button, or Effects with its enable-on-add `+`),
+  // set `selfHeader: true` so DesignPanel skips the static CardHeader.
+  selfHeader?: boolean;
   render: (target: HTMLElement, styleEdit: IStyleEditService) => React.ReactNode;
 }
 
+// Pre-MVP layout: sections are always-on (no chevron / no collapse).
+// CardHeader becomes a pure static title row; sections that need a
+// right-side action (e.g., Border `+`, Radius `+`) render it themselves
+// and opt out of the static header via `selfHeader`.
 const SECTIONS: readonly SectionConfig[] = [
-  { id: 'boxmodel', title: 'Box Model', render: (t, s) => <BoxModelSection target={t} styleEdit={s} /> },
+  { id: 'boxmodel', title: 'Box model', render: (t, s) => <BoxModelSection target={t} styleEdit={s} /> },
   { id: 'typography', title: 'Typography', render: (t, s) => <TypographySection target={t} styleEdit={s} /> },
   { id: 'background', title: 'Background', render: (t, s) => <BackgroundSection target={t} styleEdit={s} /> },
-  { id: 'border', title: 'Border', render: (t, s) => <BorderSection target={t} styleEdit={s} /> },
-  { id: 'effects', title: 'Effects', render: (t, s) => <EffectsSection target={t} styleEdit={s} /> },
+  { id: 'border', title: 'Border', selfHeader: true, render: (t, s) => <BorderSection target={t} styleEdit={s} /> },
+  { id: 'effects', title: 'Radius', render: (t, s) => <EffectsSection target={t} styleEdit={s} /> },
 ];
 
 interface Props {
@@ -48,9 +55,6 @@ interface Props {
 
 export const DesignPanel = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
   const visible = uiStore.visible && uiStore.mode === 'design' && selectionStore.selected != null;
-  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
-
-  const toggle = (id: string) => setCollapsed((m) => ({ ...m, [id]: !m[id] }));
 
   if (!visible) return null;
   const target = selectionStore.selected!;
@@ -75,7 +79,7 @@ export const DesignPanel = observer(({ uiStore, selectionStore, styleEdit }: Pro
       onKeyDown={(e) => e.stopPropagation()}
     >
       <header className="flex flex-col gap-0.5 border-b px-1 pb-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[10px] font-semibold text-muted-foreground">
           Selection
         </span>
         <span className="truncate text-xs font-mono" title={summary}>
@@ -87,33 +91,12 @@ export const DesignPanel = observer(({ uiStore, selectionStore, styleEdit }: Pro
       </header>
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-0.5">
-        {SECTIONS.map((sec) => {
-          const isCollapsed = collapsed[sec.id] === true;
-          return (
-            <Card key={sec.id}>
-              <CardHeader
-                role="button"
-                tabIndex={0}
-                onClick={() => toggle(sec.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggle(sec.id);
-                  }
-                }}
-                className="cursor-pointer select-none hover:bg-accent"
-              >
-                <span>{sec.title}</span>
-                {isCollapsed ? (
-                  <ChevronRight className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-              </CardHeader>
-              {!isCollapsed && <CardContent>{sec.render(target, styleEdit)}</CardContent>}
-            </Card>
-          );
-        })}
+        {SECTIONS.map((sec) => (
+          <Card key={sec.id}>
+            {!sec.selfHeader && <CardHeader>{sec.title}</CardHeader>}
+            <CardContent>{sec.render(target, styleEdit)}</CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
