@@ -636,8 +636,10 @@ test.describe('paperx Sprint 3 (F + G)', () => {
       const target = page.locator('[data-uid="cta-btn-003"]');
       await target.click();
 
-      // Unified mode is the default — typing into the unified input
-      // applies the same value to all 4 corners.
+      // v0.6.0: Radius starts in the empty state (no rounding) — click
+      // the `+` to enable, which seeds 8px and reveals the unified input.
+      // Then re-fill it to the value the assertion expects.
+      await page.locator('[data-testid="paperx-radius-add"]').click({ timeout: 5_000 });
       const unifiedInput = page.locator('[data-testid="paperx-radius-unified-input"]');
       await expect(unifiedInput).toBeVisible({ timeout: 5_000 });
       await unifiedInput.fill('12');
@@ -672,6 +674,8 @@ test.describe('paperx Sprint 3 (F + G)', () => {
       const target = page.locator('[data-uid="cta-btn-003"]');
       await target.click();
 
+      // v0.6.0: enable Radius first (empty state hides the editor).
+      await page.locator('[data-testid="paperx-radius-add"]').click({ timeout: 5_000 });
       // Default mode is unified — unified input is visible.
       await expect(page.locator('[data-testid="paperx-radius-unified-input"]')).toBeVisible({
         timeout: 5_000,
@@ -684,7 +688,9 @@ test.describe('paperx Sprint 3 (F + G)', () => {
       });
       await expect(page.locator('[data-testid="paperx-radius-unified-input"]')).toHaveCount(0);
 
-      // Filling only TL must NOT broadcast to other corners.
+      // Filling only TL must NOT broadcast to other corners. The `+`
+      // click above seeded all four corners to 8px, so TR stays at 8px
+      // (the unchanged baseline) rather than the empty string.
       const tl = page.locator('[data-testid="paperx-radius-tl"]');
       await tl.fill('20');
       await tl.press('Tab');
@@ -698,7 +704,7 @@ test.describe('paperx Sprint 3 (F + G)', () => {
             }),
           { timeout: 5_000 },
         )
-        .toEqual(['20px', '']);
+        .toEqual(['20px', '8px']);
     } finally {
       await ctx.close();
     }
@@ -1144,30 +1150,9 @@ test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
     }
   });
 
-  test('Border: collapse + re-expand restores rows from inline style', async () => {
-    const ctx = await launchWithExtension();
-    try {
-      const page = await openFixture(ctx);
-
-      await page.locator('[data-testid="paperx-mode-design"]').click();
-      await page.locator('[data-uid="cta-btn-003"]').click();
-
-      await page.locator('[data-testid="paperx-border-add"]').click({ timeout: 10_000 });
-      const rows = page.locator('[data-testid^="paperx-border-row-b-"]');
-      await expect(rows).toHaveCount(1);
-
-      // Collapse the section by clicking its CardHeader, then expand
-      // again. State must re-seed from inline style, not get blown away.
-      const header = page.locator('paperx-root').getByRole('button', { name: 'Border', exact: true });
-      await header.click();
-      await expect(rows).toHaveCount(0); // CardContent unmounted
-
-      await header.click();
-      await expect(rows).toHaveCount(1, { timeout: 5_000 });
-    } finally {
-      await ctx.close();
-    }
-  });
+  // Removed in v0.6.0: 'Border: collapse + re-expand restores rows from
+  // inline style' — pre-MVP design-panel sections are always-on (no
+  // collapse), so the scenario this test covered no longer exists.
 
   test('Border: switching the selected element re-seeds the entries', async () => {
     const ctx = await launchWithExtension();

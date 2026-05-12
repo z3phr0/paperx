@@ -20,6 +20,7 @@ import type { IStyleEditService } from '@/shared/services/StyleEditService';
 import { buildSelector } from '@/shared/types/changes';
 
 import { BoxModelSection } from './sections/BoxModel';
+import { LayoutSection } from './sections/Layout';
 import { TypographySection } from './sections/Typography';
 import { BackgroundSection } from './sections/Background';
 import { BorderSection } from './sections/Border';
@@ -41,6 +42,7 @@ interface SectionConfig {
 // and opt out of the static header via `selfHeader`.
 const SECTIONS: readonly SectionConfig[] = [
   { id: 'boxmodel', title: 'Box model', render: (t, s) => <BoxModelSection target={t} styleEdit={s} /> },
+  { id: 'layout', title: 'Layout', render: (t, s) => <LayoutSection target={t} styleEdit={s} /> },
   { id: 'typography', title: 'Typography', render: (t, s) => <TypographySection target={t} styleEdit={s} /> },
   { id: 'background', title: 'Background', render: (t, s) => <BackgroundSection target={t} styleEdit={s} /> },
   { id: 'border', title: 'Border', selfHeader: true, render: (t, s) => <BorderSection target={t} styleEdit={s} /> },
