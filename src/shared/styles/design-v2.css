@@ -448,14 +448,25 @@
   background: var(--dv-bg-input-hover);
 }
 .dv-dropdown-menu {
-  background: var(--dv-bg);
+  /* Layered background so the popup reads as an input-like surface
+     regardless of what's behind it on the host page: the inner gradient
+     paints the same 6%-white overlay that --dv-bg-input gives an Input
+     field, and the outer rgba lays down a near-opaque dark base so item
+     text never fights with bright host content bleeding through. */
+  background:
+    linear-gradient(var(--dv-bg-input), var(--dv-bg-input)),
+    rgba(28, 28, 30, 0.92);
   border: 1px solid var(--dv-border);
   border-radius: 8px;
-  box-shadow: var(--dv-shadow-card);
+  /* Light shadow — just enough to lift the outline; the heavy
+     --dv-shadow-card was overkill for a small popup. */
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
   padding: 4px;
   min-width: 120px;
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   z-index: 2147483647;
   /* paperx-portal-layer is pointer-events:none so portaled overlays
      don't trap host-page clicks. The menu itself must re-enable pointer
@@ -469,7 +480,7 @@
   gap: 8px;
   width: 100%;
   padding: 6px 10px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -485,6 +496,13 @@
 }
 .dv-dropdown-item:last-child {
   margin-bottom: 0;
+}
+/* Inline SVGs default to baseline alignment, which floats the check
+   glyph below the label's optical center. Forcing block layout drops
+   the baseline behavior so the icon sits where align-items: center
+   intends. */
+.dv-dropdown-item svg {
+  display: block;
 }
 /* Hover: gold-tinted band — distinctly visible against the dark glass
    menu background, and keeps the white item text readable. The earlier
