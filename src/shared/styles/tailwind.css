@@ -20,6 +20,27 @@
       0 1px 0 0 hsl(0 0% 0% / 0.4),
       0 12px 32px -8px hsl(0 0% 0% / 0.5);
   }
+
+  /*
+   * react-color SketchFields ships HEX/R/G/B/A labels with hardcoded
+   * `color: #222` and inputs with `box-shadow: inset 0 0 0 1px #ccc` as
+   * inline styles (not exposed via SketchPicker's `styles` prop), which
+   * are unreadable on the dark `paperx-surface`. Override via the stable
+   * `flexbox-fix` wrapper class scoped to the surface. `!important` is
+   * required to beat react-color's inline styles.
+   */
+  .paperx-surface .flexbox-fix label {
+    color: hsl(var(--paperx-foreground)) !important;
+  }
+  .paperx-surface .flexbox-fix input {
+    color: hsl(var(--paperx-foreground)) !important;
+    background: transparent !important;
+    box-shadow: inset 0 0 0 1px hsl(var(--paperx-input)) !important;
+  }
+  .paperx-surface .flexbox-fix input:focus {
+    box-shadow: inset 0 0 0 1px hsl(var(--paperx-foreground) / 0.6) !important;
+    outline: none !important;
+  }
 }
 
 @tailwind utilities;

@@ -176,24 +176,6 @@ function deriveGlobalStyle(target: HTMLElement): BorderStyle {
   return 'solid';
 }
 
-function splitHex8(hex8: string): { hex6: string; alphaPercent: number } {
-  const m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(hex8);
-  if (!m) return { hex6: '000000', alphaPercent: 100 };
-  const hex6 = m[1]!.toLowerCase();
-  const alphaHex = m[2];
-  const alphaPercent = alphaHex
-    ? Math.round((parseInt(alphaHex, 16) / 255) * 100)
-    : 100;
-  return { hex6, alphaPercent };
-}
-
-function joinHex8(hex6: string, alphaPercent: number): string {
-  const cleaned = hex6.replace(/^#/, '').padEnd(6, '0').slice(0, 6);
-  const a = Math.round(Math.max(0, Math.min(100, alphaPercent)) * 2.55);
-  const aHex = a.toString(16).padStart(2, '0');
-  return `#${cleaned}${aHex}`;
-}
-
 interface RowProps {
   entry: BorderEntry;
   usedSides: Set<BorderSide>;
@@ -215,31 +197,6 @@ const Row: React.FC<RowProps> = ({
   onToggleVisible,
   onRemove,
 }) => {
-  const { hex6, alphaPercent } = splitHex8(entry.color);
-  const [hexDraft, setHexDraft] = React.useState<string>(hex6);
-  const [alphaDraft, setAlphaDraft] = React.useState<string>(String(alphaPercent));
-
-  React.useEffect(() => setHexDraft(hex6), [hex6]);
-  React.useEffect(() => setAlphaDraft(String(alphaPercent)), [alphaPercent]);
-
-  const commitHex = () => {
-    const trimmed = hexDraft.trim();
-    if (!/^[0-9a-f]{6}$/i.test(trimmed)) {
-      setHexDraft(hex6);
-      return;
-    }
-    onChangeColor(entry.id, joinHex8(trimmed, alphaPercent));
-  };
-
-  const commitAlpha = () => {
-    const n = parseInt(alphaDraft, 10);
-    if (Number.isNaN(n)) {
-      setAlphaDraft(String(alphaPercent));
-      return;
-    }
-    onChangeColor(entry.id, joinHex8(hex6, n));
-  };
-
   return (
     <div className="flex flex-col gap-1" data-testid={`paperx-border-row-${entry.id}`}>
       <div className="flex items-center gap-1.5">
@@ -305,40 +262,13 @@ const Row: React.FC<RowProps> = ({
         </button>
       </div>
 
-      {/* Color sub-row */}
-      <div className="flex h-6 items-center gap-1.5 rounded-sm border border-input bg-white/5 px-1.5">
-        <ColorPicker
-          value={entry.color}
-          onChange={(next) => onChangeColor(entry.id, next)}
-          onPreview={(next) => onPreviewColor(entry.id, next)}
-          ariaLabel="Border color"
-        />
-        <Input
-          data-testid={`paperx-border-${entry.id}-color-input`}
-          type="text"
-          value={hexDraft}
-          onChange={(e) => setHexDraft(e.currentTarget.value.replace(/^#/, ''))}
-          onBlur={commitHex}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-          className="h-5 w-20 border-0 bg-transparent px-0 text-[11px] uppercase focus-visible:ring-0"
-        />
-        <span className="text-[10px] text-muted-foreground">/</span>
-        <Input
-          data-testid={`paperx-border-${entry.id}-alpha-input`}
-          type="text"
-          inputMode="numeric"
-          value={alphaDraft}
-          onChange={(e) => setAlphaDraft(e.currentTarget.value)}
-          onBlur={commitAlpha}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-          className="h-5 w-10 border-0 bg-transparent px-0 text-right text-[11px] focus-visible:ring-0"
-        />
-        <span className="text-[10px] text-muted-foreground">%</span>
-      </div>
+      {/* Color sub-row — single integrated trigger (swatch + hex + alpha%). */}
+      <ColorPicker
+        value={entry.color}
+        onChange={(next) => onChangeColor(entry.id, next)}
+        onPreview={(next) => onPreviewColor(entry.id, next)}
+        ariaLabel="Border color"
+      />
     </div>
   );
 };

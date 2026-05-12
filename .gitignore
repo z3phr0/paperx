@@ -36,3 +36,6 @@ bun-debug.log*
 # Playwright e2e (S3-A)
 /playwright-report
 /test-results
+
+# Claude Code local harness
+/.claude

@@ -34,6 +34,7 @@ import { SketchPicker, type ColorResult } from 'react-color';
 import { usePortalContainer } from '@/shared/ui/portal';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
+import { DEFAULT_PRESETS } from '@/shared/ui/colorPresets';
 
 export interface ColorPickerProps {
   value: string;
@@ -46,6 +47,13 @@ export interface ColorPickerProps {
   onPreview?: (value: string) => void;
   disabled?: boolean;
   ariaLabel?: string;
+  /**
+   * Curated palette shown below the SketchPicker. Always rendered when
+   * non-empty; pass `[]` to suppress. Defaults to `DEFAULT_PRESETS`.
+   * Future design-token integration replaces the default constant in
+   * `colorPresets.ts` — call sites stay untouched.
+   */
+  presets?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -185,12 +193,52 @@ function colorResultToRgba(c: ColorResult): RGBA {
 // Component
 // ---------------------------------------------------------------------------
 
+interface SwatchGridProps {
+  label: string;
+  colors: readonly string[];
+  testIdPrefix: string;
+  onPick: (color: string) => void;
+}
+
+function SwatchGrid({ label, colors, testIdPrefix, onPick }: SwatchGridProps): React.ReactElement {
+  return (
+    <div className="mt-2">
+      <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-white/50">
+        {label}
+      </div>
+      <div className="grid grid-cols-8 gap-1">
+        {colors.map((c, i) => {
+          const transparent = (parseToRgba(c)?.a ?? 1) === 0;
+          return (
+            <button
+              key={`${c}-${i}`}
+              type="button"
+              data-testid={`${testIdPrefix}-${i}`}
+              aria-label={`Use ${c}`}
+              onClick={() => onPick(c)}
+              className={cn(
+                'h-5 w-full rounded-sm border border-white/20',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+              )}
+              style={{
+                background: transparent ? CHECKER_BG : undefined,
+                backgroundColor: transparent ? undefined : c,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ColorPicker({
   value,
   onChange,
   onPreview,
   disabled,
   ariaLabel,
+  presets = DEFAULT_PRESETS,
 }: ColorPickerProps): React.ReactElement {
   const portalContainer = usePortalContainer();
   const [open, setOpen] = React.useState(false);
@@ -266,6 +314,18 @@ export function ColorPicker({
   const swatchBg = value && value.trim() !== '' ? value : 'transparent';
   const showChecker = !value || value.trim() === '';
 
+  // Derive the trigger's display strings from `value`. The pill is a pure
+  // mirror of the current color — hex/alpha edits happen inside the
+  // popover (SketchPicker), never via separate inputs in the trigger.
+  const display = React.useMemo<{ hex: string; alpha: number | null }>(() => {
+    const trimmed = (value ?? '').trim();
+    if (!trimmed) return { hex: '—', alpha: null };
+    const rgba = parseToRgba(trimmed);
+    if (!rgba) return { hex: '—', alpha: null };
+    const hex = `${toHex2(rgba.r)}${toHex2(rgba.g)}${toHex2(rgba.b)}`.toUpperCase();
+    return { hex, alpha: Math.round(rgba.a * 100) };
+  }, [value]);
+
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild disabled={disabled}>
@@ -274,21 +334,29 @@ export function ColorPicker({
           data-testid="paperx-color-trigger"
           aria-label={ariaLabel ?? 'Pick color'}
           className={cn(
-            'relative h-6 w-6 shrink-0 rounded-sm border border-white/20',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+            'inline-flex h-6 min-w-[7rem] items-center gap-1.5 rounded-sm border border-input bg-white/5 px-1.5',
+            'text-[11px] text-foreground transition-colors',
+            'hover:bg-accent hover:text-accent-foreground',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             'disabled:cursor-not-allowed disabled:opacity-50',
           )}
-          style={{
-            background: showChecker ? CHECKER_BG : undefined,
-            backgroundColor: showChecker ? undefined : swatchBg,
-          }}
         >
-          {/* Bottom-right caret hint. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute bottom-0 right-0 h-0 w-0 border-l-[5px] border-t-[5px] border-l-transparent border-t-transparent border-r-[5px] border-b-[5px] border-r-white border-b-white drop-shadow"
-            style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,.4))' }}
+            className="h-3.5 w-3.5 shrink-0 rounded-sm border border-white/20"
+            style={{
+              background: showChecker ? CHECKER_BG : undefined,
+              backgroundColor: showChecker ? undefined : swatchBg,
+            }}
           />
+          <span className="flex-1 truncate text-left uppercase tracking-wide">
+            {display.hex}
+          </span>
+          {display.alpha != null && (
+            <span className="shrink-0 tabular-nums text-muted-foreground">
+              {display.alpha}%
+            </span>
+          )}
         </button>
       </Popover.Trigger>
       <Popover.Portal container={portalContainer}>
@@ -321,7 +389,9 @@ export function ColorPicker({
               onPreview?.(toHex8(rgba));
             }}
             disableAlpha={false}
-            presetColors={recents.length > 0 ? recents : undefined}
+            // Suppress react-color's stock 15-color row — we render our
+            // own Recent + Presets grids below so we control the palette.
+            presetColors={[]}
             styles={{
               default: {
                 picker: {
@@ -335,30 +405,20 @@ export function ColorPicker({
             }}
           />
           {recents.length > 0 && (
-            <div className="mt-2">
-              <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-white/50">
-                Recent
-              </div>
-              <div className="grid grid-cols-8 gap-1">
-                {recents.map((c, i) => (
-                  <button
-                    key={`${c}-${i}`}
-                    type="button"
-                    data-testid={`paperx-color-recent-${i}`}
-                    aria-label={`Apply ${c}`}
-                    onClick={() => {
-                      const parsed = parseToRgba(c) ?? FALLBACK_RGBA;
-                      commit(parsed);
-                    }}
-                    className={cn(
-                      'h-5 w-full rounded-sm border border-white/20',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
-                    )}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
+            <SwatchGrid
+              label="Recent"
+              colors={recents}
+              testIdPrefix="paperx-color-recent"
+              onPick={(c) => commit(parseToRgba(c) ?? FALLBACK_RGBA)}
+            />
+          )}
+          {presets.length > 0 && (
+            <SwatchGrid
+              label="Presets"
+              colors={presets}
+              testIdPrefix="paperx-color-preset"
+              onPick={(c) => commit(parseToRgba(c) ?? FALLBACK_RGBA)}
+            />
           )}
           <div className="mt-2 flex justify-end">
             <Button size="sm" onClick={() => commit(draft)} type="button">
