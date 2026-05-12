@@ -43,20 +43,26 @@ const GUIDE_MODES: ReadonlySet<string> = new Set(['design', 'ruler', 'comment'])
 const MIN_PX = 1;
 
 function chipStyle(x: number, y: number): React.CSSProperties {
+  // Glass-dark chip aligned with paperx-surface design tokens. CSS
+  // custom properties live on `:host` (tokens.css) and cascade through
+  // the shadow DOM into inline styles. Future token tweaks (e.g.,
+  // changing glass opacity) propagate automatically.
   return {
     position: 'fixed',
     left: `${x}px`,
     top: `${y}px`,
     transform: 'translate(-50%, -50%)',
-    background: '#FFFFFF',
-    color: '#1F2937',
-    border: '1px solid #E5E7EB',
-    borderRadius: '3px',
-    padding: '2px 5px',
+    backgroundColor: 'hsl(var(--paperx-glass-bg) / var(--paperx-glass-alpha))',
+    backdropFilter: 'blur(8px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(8px) saturate(180%)',
+    color: 'hsl(var(--paperx-foreground))',
+    border: '1px solid hsl(var(--paperx-glass-border) / var(--paperx-glass-border-alpha))',
+    borderRadius: '4px',
+    padding: '2px 6px',
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
     fontSize: '11px',
     lineHeight: 1.2,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0 2px 8px hsl(0 0% 0% / 0.4)',
     pointerEvents: 'none',
     zIndex: Z_LABEL,
     whiteSpace: 'nowrap',
