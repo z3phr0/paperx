@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/z3phr0/paperx/compare/v0.5.2...v0.6.0) (2026-05-12)
+
+
+### Features
+
+* **design:** add Layout section (Stack/Grid Framer-style) ([8915286](https://github.com/z3phr0/paperx/commit/8915286ca7f3c74735819947a24043a4ab069356))
+* **design:** rename Effects → Radius + enable-on-add empty state ([0cf906a](https://github.com/z3phr0/paperx/commit/0cf906a14c501dd36fed5f6d9ba3827d5b533260))
 ## [0.5.2](https://github.com/z3phr0/paperx/compare/v0.5.1...v0.5.2) (2026-05-12)
 
 
