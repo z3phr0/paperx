@@ -42,6 +42,10 @@
 [data-theme="dark"] {
   --dv-bg: rgba(28, 28, 30, 0.62);
   --dv-bg-elev: rgba(44, 44, 46, 0.55);
+  /* Opaque popover surface — same hue as --dv-bg-elev (44,44,46) but α=1
+     so dropdown menus / floating overlays don't bleed host-page color
+     through. Reads as the "lifted" macOS popover layer. */
+  --dv-bg-popover: #2c2c2e;
   --dv-bg-input: rgba(255, 255, 255, 0.06);
   --dv-bg-input-hover: rgba(255, 255, 255, 0.1);
   --dv-bg-input-active: rgba(255, 255, 255, 0.14);
@@ -487,12 +491,22 @@
 .dv-dropdown:hover {
   background: var(--dv-bg-input-hover);
 }
+/* Active: Radix sets data-state="open" on the trigger while the menu is
+   visible. Mirror .dv-input:focus-within and .paperx-color-trigger-v2 so
+   "this primitive owns the open overlay" reads consistently across all
+   v2 row primitives. */
+.dv-dropdown:focus-visible,
+.dv-dropdown[data-state='open'] {
+  background: var(--dv-bg-input-active);
+  border-color: var(--dv-accent);
+  box-shadow: 0 0 0 2px var(--dv-accent-soft);
+  outline: none;
+}
 .dv-dropdown-menu {
-  /* Match the Input field's recipe verbatim — same overlay token and
-     blur intensity — so the popup inherits identical glass treatment
-     when it sits on top of the inspector. No extra base layer; the
-     inspector's --dv-bg behind plays the role of the dark base. */
-  background: var(--dv-bg-input);
+  /* Opaque popover surface — host page must NOT bleed through. The old
+     0.06α white over the panel's 0.62α dark stack washed item rows out;
+     --dv-bg-popover is the same hue as --dv-bg-elev but solid. */
+  background: var(--dv-bg-popover);
   border: 1px solid var(--dv-border);
   border-radius: 8px;
   /* Light shadow — just enough to lift the outline; the heavy
@@ -502,8 +516,7 @@
     0 0 0 1px rgba(255, 255, 255, 0.04);
   padding: 4px;
   min-width: 120px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* backdrop-filter dropped — no-op on opaque surfaces, saves a layer. */
   z-index: 2147483647;
   /* paperx-portal-layer is pointer-events:none so portaled overlays
      don't trap host-page clicks. The menu itself must re-enable pointer
