@@ -103,7 +103,6 @@ export const BorderSectionV2 = observer(({ target, styleEdit }: Props) => {
                   value={entry.side}
                   onChange={(s) => handleChangeSide(entry.id, s as BorderSide)}
                   items={sideOpts}
-                  prefix={<Icon name="border" size={11} />}
                   data-testid={`paperx-border-${entry.id}-direction`}
                   itemTestidPrefix={`paperx-border-${entry.id}-direction-opt`}
                 />
