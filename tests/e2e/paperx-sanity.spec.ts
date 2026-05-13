@@ -1127,9 +1127,16 @@ test.describe('paperx mode toggle (v0.7.0)', () => {
 });
 
 /**
- * v0.8.0 — Figma-style measurement guides (hover lines + distance labels).
+ * v0.8.0 / v0.10.0 — Figma + visBug-style measurement guides.
+ *
+ * v0.10.0 reshapes distance labels by classifying the (A, B) geometric
+ * relationship (contained / vertical-gap / horizontal-gap / diagonal)
+ * and rendering only the nearest-edge gap(s) for the case. Three
+ * dedicated fixture pairs (`dist-wrap-A` + `dist-child-B`,
+ * `dist-vstack-A` + `dist-vstack-B`, `dist-diag-A` + `dist-diag-B`)
+ * give each case predictable geometry.
  */
-test.describe('paperx measurement guides (v0.8.0)', () => {
+test.describe('paperx measurement guides (v0.8.0 / v0.10.0)', () => {
   test('Hover shows 4 dashed full-viewport guides; selecting + hover shows distance labels', async () => {
     const ctx = await launchWithExtension();
     try {
@@ -1154,8 +1161,8 @@ test.describe('paperx measurement guides (v0.8.0)', () => {
       await targetA.click();
 
       // Hover a different element B — distance labels appear in
-      // addition to B's hover guides. At least one of the four labels
-      // is visible (concrete count depends on geometry).
+      // addition to B's hover guides. h1 (selected) is above the button
+      // with horizontal overlap → vertical-gap case → exactly 1 chip.
       const targetB = page.locator('[data-uid="cta-btn-003"]');
       await targetB.hover();
       await expect(page.locator('[data-testid="paperx-hover-guide-top"]')).toBeVisible({
@@ -1171,6 +1178,90 @@ test.describe('paperx measurement guides (v0.8.0)', () => {
       await expect(page.locator('[data-testid^="paperx-distance-"]')).toHaveCount(0, {
         timeout: 3_000,
       });
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Containment case: 4 inset chips, 0 alignment guides', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // Wrap is 300x200; child is 100x80 at left:50, top:40. The wrap's
+      // top-left corner (10, 10 inside its bbox) sits in dead space
+      // outside the child, so clicking there selects the wrap, not the
+      // child painted on top of it.
+      const wrap = page.locator('[data-uid="dist-wrap-A"]');
+      await wrap.click({ position: { x: 10, y: 10 } });
+
+      const child = page.locator('[data-uid="dist-child-B"]');
+      await child.hover();
+
+      // 4 inset chips, one per side.
+      const chips = page.locator('[data-testid^="paperx-distance-"]');
+      await expect(chips).toHaveCount(4, { timeout: 3_000 });
+      for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+        const chip = page.locator(`[data-testid="paperx-distance-${side}"]`);
+        await expect(chip).toBeVisible();
+        await expect(chip).toHaveAttribute('data-kind', 'inset');
+      }
+      // No alignment guides for containment.
+      await expect(page.locator('[data-testid="paperx-alignment-guide"]')).toHaveCount(0);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Vertical-gap case: 1 outer chip on bottom side, 0 alignment guides', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // vstack-A above vstack-B, same x range → horizontal overlap, no
+      // vertical overlap → vertical-gap. Selected = A (top), so the
+      // chip lives on A's bottom side.
+      await page.locator('[data-uid="dist-vstack-A"]').click();
+      await page.locator('[data-uid="dist-vstack-B"]').hover();
+
+      const chips = page.locator('[data-testid^="paperx-distance-"]');
+      await expect(chips).toHaveCount(1, { timeout: 3_000 });
+      const bottomChip = page.locator('[data-testid="paperx-distance-bottom"]');
+      await expect(bottomChip).toBeVisible();
+      await expect(bottomChip).toHaveAttribute('data-kind', 'outer');
+      await expect(page.locator('[data-testid="paperx-alignment-guide"]')).toHaveCount(0);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Diagonal case: 2 outer chips + 2 alignment guides', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // diag-A top-left, diag-B bottom-right, no axis overlap → diagonal.
+      // Two chips on A's right (horizontal gap) + bottom (vertical gap)
+      // sides, plus two dashed sight-lines.
+      await page.locator('[data-uid="dist-diag-A"]').click();
+      await page.locator('[data-uid="dist-diag-B"]').hover();
+
+      const chips = page.locator('[data-testid^="paperx-distance-"]');
+      await expect(chips).toHaveCount(2, { timeout: 3_000 });
+      await expect(page.locator('[data-testid="paperx-distance-right"]')).toBeVisible();
+      await expect(page.locator('[data-testid="paperx-distance-bottom"]')).toBeVisible();
+      await expect(page.locator('[data-testid="paperx-distance-right"]')).toHaveAttribute(
+        'data-kind',
+        'outer',
+      );
+      await expect(page.locator('[data-testid="paperx-distance-bottom"]')).toHaveAttribute(
+        'data-kind',
+        'outer',
+      );
+      await expect(page.locator('[data-testid="paperx-alignment-guide"]')).toHaveCount(2);
     } finally {
       await ctx.close();
     }

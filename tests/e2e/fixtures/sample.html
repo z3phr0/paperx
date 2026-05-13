@@ -20,5 +20,22 @@
       <div data-uid="snap-A-100" style="position:absolute;left:0;top:0;width:120px;height:60px;background:#cbd5e1"></div>
       <div data-uid="snap-B-200" style="position:absolute;left:200px;top:0;width:120px;height:60px;background:#fbbf24"></div>
     </div>
+
+    <!-- v0.10.0 distance-measurement cases. Three predictable pairs
+         exercising the visBug-style classifier:
+           - dist-wrap-A contains dist-child-B → 'contained' (4 inset chips)
+           - dist-vstack-A / dist-vstack-B share x range → 'vertical-gap'
+             (1 outer chip on 'bottom')
+           - dist-diag-A / dist-diag-B no axis overlap → 'diagonal'
+             (2 outer chips + 2 alignment guides) -->
+    <div style="position:relative;height:240px;margin-top:32px">
+      <div data-uid="dist-wrap-A" style="position:absolute;left:0;top:0;width:300px;height:200px;background:#eee">
+        <div data-uid="dist-child-B" style="position:absolute;left:50px;top:40px;width:100px;height:80px;background:#aaa"></div>
+      </div>
+      <div data-uid="dist-vstack-A" style="position:absolute;left:340px;top:0;width:120px;height:60px;background:#cfc"></div>
+      <div data-uid="dist-vstack-B" style="position:absolute;left:340px;top:120px;width:120px;height:60px;background:#fcc"></div>
+      <div data-uid="dist-diag-A" style="position:absolute;left:500px;top:0;width:80px;height:60px;background:#bdf"></div>
+      <div data-uid="dist-diag-B" style="position:absolute;left:660px;top:160px;width:80px;height:60px;background:#fbd"></div>
+    </div>
   </body>
 </html>
