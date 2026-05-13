@@ -616,17 +616,28 @@
 
 /* ============ SCROLLBAR ============ */
 .dv-scroll {
+  /* `overlay` is a Chromium non-standard scroll value that paints the
+     scrollbar on top of content rather than consuming inline-size,
+     killing the horizontal jitter that `auto` produces when content
+     transitions from fits to overflows. paperx ships MV3 (Chromium
+     only); the preceding `auto` line is the graceful fallback if a
+     future Chromium drops the value. */
   overflow-y: auto;
+  overflow-y: overlay;
 }
 .dv-scroll::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 .dv-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 .dv-scroll::-webkit-scrollbar-thumb {
-  background: var(--dv-border-strong);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  transition: background var(--dv-t);
+}
+.dv-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 /* ============ UTILITY LAYOUT ============ */
