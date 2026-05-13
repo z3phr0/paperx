@@ -1,3 +1,27 @@
+# [0.9.0](https://github.com/z3phr0/paperx/compare/v0.8.1...v0.9.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **design-v2:** 2px gap between dropdown items; flush last item ([59c3de5](https://github.com/z3phr0/paperx/commit/59c3de5f06017a511012ea0d277e6ab28e026ec9))
+* **design-v2:** clear toolbar pill + cap inspector height at 800px ([b530e0f](https://github.com/z3phr0/paperx/commit/b530e0f69ddb4b409bda92d9954398ca804a3b8c))
+* **design-v2:** drop the prefix icon on the Border side dropdown ([6ca15e4](https://github.com/z3phr0/paperx/commit/6ca15e44d0076a85f524b85a9580e3f389b99164))
+* **design-v2:** dropdown item rhythm + icon center + readable popup bg ([719681e](https://github.com/z3phr0/paperx/commit/719681eff37a1e6c70126b3a99dec86665455c61))
+* **design-v2:** label stack + arrow nudge + silent border empty state ([bc5cd20](https://github.com/z3phr0/paperx/commit/bc5cd20bff931390d811a9abd523921ca854c5f0)), closes [paperx-inspector.jsx#DesignSub](https://github.com/paperx-inspector.jsx/issues/DesignSub)
+* **design-v2:** make dropdown hover visible; drop tab hover background ([cf65e09](https://github.com/z3phr0/paperx/commit/cf65e095296f6560e5c905b4bae959e349d6c2e3))
+* **design-v2:** overlay scrollbar so the panel keeps its inner width ([73f3796](https://github.com/z3phr0/paperx/commit/73f37966cc8128385ee22c2a1f4f9c123fe9d8f7))
+* **design-v2:** popup bg uses the input recipe verbatim ([9626bad](https://github.com/z3phr0/paperx/commit/9626badcca321524876d1b11e02be58111bbe425))
+* **design-v2:** position stack, collapsed sections, dropdown hover, flat active tab ([53e4e68](https://github.com/z3phr0/paperx/commit/53e4e685eac28f6724e08a13419c5535f029b385))
+* **design-v2:** trim section padding-top to balance optical rhythm ([9d79878](https://github.com/z3phr0/paperx/commit/9d7987860d7b087c47071220294e3b4b0814ba4f))
+
+
+### Features
+
+* **design-v2:** Border/Radius sections + Inspect sub-tab; wire toolbar ([3cd19b3](https://github.com/z3phr0/paperx/commit/3cd19b35b03753a2e9dd85f27d7b3076b7e59154))
+* **design-v2:** inspector shell + Frame/Appearance/Fill sections ([f97cee9](https://github.com/z3phr0/paperx/commit/f97cee9803ccb4ba9b7871fb0b8b4b6d2f92eb9e))
+* **design-v2:** ruler mode now renders the V2 Inspect view ([1cadf91](https://github.com/z3phr0/paperx/commit/1cadf91b01bddd03b8095c7613b1e34b8b0773a1))
+* **styles:** design-v2 token sheet injected into shadow root ([c9896cd](https://github.com/z3phr0/paperx/commit/c9896cd512b405f78c97ac9cb5ce1fcc3293896d)), closes [#D09A06](https://github.com/z3phr0/paperx/issues/D09A06)
+* **ui-v2:** atomic component set for design-v2 inspector ([32c3f87](https://github.com/z3phr0/paperx/commit/32c3f87609fd83484de3bc2ae90362c9470fb475))
 ## [0.8.1](https://github.com/z3phr0/paperx/compare/v0.8.0...v0.8.1) (2026-05-12)
 # [0.8.0](https://github.com/z3phr0/paperx/compare/v0.7.1...v0.8.0) (2026-05-12)
 
