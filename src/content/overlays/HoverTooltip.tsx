@@ -17,6 +17,7 @@ import { observer } from 'mobx-react-lite';
 
 import type { UIStore } from '@/shared/stores/UIStore';
 import type { SelectionStore } from '@/shared/stores/SelectionStore';
+import type { Bbox } from '@/shared/utils/positionPanel';
 
 interface Props {
   uiStore: UIStore;
@@ -25,6 +26,35 @@ interface Props {
 
 const TOOLTIP_W = 280;
 const TOOLTIP_GAP = 8;
+// Conservative height hint — we don't know the rendered height up-front
+// so this is the worst-case footprint used for both rendering and
+// external avoid-list math.
+const TOOLTIP_H_HINT = 120;
+
+/**
+ * Compute the tooltip's clamped viewport bbox for a given element rect.
+ * Exposed so other overlays (e.g., DesignPanelV2 auto-positioning) can
+ * include this in their avoid list without re-implementing the math.
+ */
+export function getHoverTooltipRect(
+  elementRect: DOMRect,
+  viewport: { width: number; height: number },
+): Bbox {
+  const fitsAbove = elementRect.top >= TOOLTIP_H_HINT + TOOLTIP_GAP;
+  const top = fitsAbove
+    ? Math.max(8, elementRect.top - TOOLTIP_H_HINT - TOOLTIP_GAP)
+    : Math.min(viewport.height - 8, elementRect.bottom + TOOLTIP_GAP);
+  const left = Math.min(
+    Math.max(8, elementRect.left),
+    Math.max(8, viewport.width - TOOLTIP_W - 8),
+  );
+  return {
+    left,
+    top,
+    right: left + TOOLTIP_W,
+    bottom: top + TOOLTIP_H_HINT,
+  };
+}
 
 function shortClassList(el: HTMLElement): string {
   if (!el.classList || el.classList.length === 0) return '';
@@ -97,18 +127,13 @@ export const HoverTooltip = observer(({ uiStore, selectionStore }: Props) => {
 
   const sample = sampleOf(hovered, rect);
 
-  // Position: above by default; flip below if there is no room. We don't
-  // know the rendered tooltip height ahead of time so use a conservative
-  // 120px as the "needs room" threshold.
-  const TOOLTIP_H_HINT = 120;
-  const fitsAbove = rect.top >= TOOLTIP_H_HINT + TOOLTIP_GAP;
-  const top = fitsAbove
-    ? Math.max(8, rect.top - TOOLTIP_H_HINT - TOOLTIP_GAP)
-    : Math.min(window.innerHeight - 8, rect.bottom + TOOLTIP_GAP);
-  const left = Math.min(
-    Math.max(8, rect.left),
-    Math.max(8, window.innerWidth - TOOLTIP_W - 8),
-  );
+  // Position: above by default; flip below if there is no room. The math
+  // is shared with DesignPanelV2's avoid list via getHoverTooltipRect so
+  // both surfaces agree on where the tooltip lands.
+  const { left, top } = getHoverTooltipRect(rect, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   return (
     <div
