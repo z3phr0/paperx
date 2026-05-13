@@ -1,3 +1,9 @@
+## [0.10.3](https://github.com/z3phr0/paperx/compare/v0.10.2...v0.10.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* **design-v2:** hoist dark-theme tokens to :host so portaled overlays resolve them ([fa08c71](https://github.com/z3phr0/paperx/commit/fa08c714bb24a0893ab4fe12c1e2797e5cd3d249)), closes [#2c2c2e](https://github.com/z3phr0/paperx/issues/2c2c2e) [#paperx-portal-layer](https://github.com/z3phr0/paperx/issues/paperx-portal-layer)
 ## [0.10.2](https://github.com/z3phr0/paperx/compare/v0.10.1...v0.10.2) (2026-05-13)
 
 
