@@ -27,19 +27,12 @@
 
   /* Transitions */
   --dv-t: 120ms cubic-bezier(0.2, 0, 0, 1);
-}
 
-[data-density="comfy"] {
-  --dv-row-h: 32px;
-  --dv-gap-y: 14px;
-  --dv-label-size: 12px;
-  --dv-value-size: 13px;
-  --dv-section-pad-x: 18px;
-  --dv-section-pad-y: 16px;
-}
-
-/* -------- DARK THEME (macOS glass) -------- */
-[data-theme="dark"] {
+  /* -------- DARK THEME (macOS glass) — hoisted from [data-theme="dark"]
+     in v0.10.3 so portaled overlays (.dv-dropdown-menu lands in
+     #paperx-portal-layer, a SIBLING of #paperx-react-root) actually
+     resolve these vars. CLAUDE.md flags light theme as deprecated; a
+     future re-introduction can override via :host([data-theme="light"]). */
   --dv-bg: rgba(28, 28, 30, 0.62);
   --dv-bg-elev: rgba(44, 44, 46, 0.55);
   /* Opaque popover surface — same hue as --dv-bg-elev (44,44,46) but α=1
@@ -62,6 +55,15 @@
     0 24px 60px rgba(0, 0, 0, 0.55),
     0 2px 10px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-density="comfy"] {
+  --dv-row-h: 32px;
+  --dv-gap-y: 14px;
+  --dv-label-size: 12px;
+  --dv-value-size: 13px;
+  --dv-section-pad-x: 18px;
+  --dv-section-pad-y: 16px;
 }
 
 /* ============ INSPECTOR PANEL ============ */

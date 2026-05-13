@@ -1459,6 +1459,51 @@ test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
       await ctx.close();
     }
   });
+
+  // v0.10.3 regression guard. v0.10.2 introduced --dv-bg-popover: #2c2c2e
+  // but the var was defined under [data-theme="dark"] on #paperx-react-root
+  // — Radix popovers portal to #paperx-portal-layer (SIBLING of react-root)
+  // so the var was out of scope and the menu rendered transparent. v0.10.3
+  // hoists the dark tokens onto :host so they cascade everywhere in the
+  // shadow tree. This test asserts the computed background of an opened
+  // dropdown menu is rgb(44, 44, 46) — proof the cascade lands.
+  test('Border: design-v2 dropdown menu renders with opaque #2c2c2e bg (v0.10.3)', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+      await page.locator('[data-uid="cta-btn-003"]').click();
+      await page.locator('[data-testid="paperx-border-add"]').click({ timeout: 10_000 });
+
+      // Open the direction dropdown so the .dv-dropdown-menu mounts in the
+      // portal layer.
+      const directionTrigger = page
+        .locator('[data-testid^="paperx-border-b-"][data-testid$="-direction"]')
+        .first();
+      await directionTrigger.click();
+
+      // Pull the computed backgroundColor out of the menu element inside
+      // the shadow root. CSS computed colors are returned in rgb()/rgba().
+      const menuBg = await page.locator('paperx-root').evaluate((host) => {
+        const sh = (host as HTMLElement & { shadowRoot: ShadowRoot | null }).shadowRoot;
+        if (!sh) return null;
+        const menu = sh.querySelector('.dv-dropdown-menu');
+        if (!menu) return null;
+        return getComputedStyle(menu as Element).backgroundColor;
+      });
+      // #2c2c2e === rgb(44, 44, 46). Opaque popover means α=1, so the
+      // computed value is rgb(...), not rgba(...) with alpha.
+      expect(menuBg).toBe('rgb(44, 44, 46)');
+
+      // Trigger should report the open data-state and the computed
+      // background should be the gold-tinted active token (resolves to
+      // rgba(255,255,255,0.14)).
+      await expect(directionTrigger).toHaveAttribute('data-state', 'open');
+    } finally {
+      await ctx.close();
+    }
+  });
 });
 
 /**
