@@ -1,3 +1,9 @@
+## [0.10.2](https://github.com/z3phr0/paperx/compare/v0.10.1...v0.10.2) (2026-05-13)
+
+
+### Features
+
+* **design-v2:** Dropdown active state on trigger + opaque popup bg ([b920715](https://github.com/z3phr0/paperx/commit/b9207153350facc30edf5afb8d8a3c2059be12f8)), closes [#2c2c2e](https://github.com/z3phr0/paperx/issues/2c2c2e)
 ## [0.10.1](https://github.com/z3phr0/paperx/compare/v0.10.0...v0.10.1) (2026-05-13)
 
 
