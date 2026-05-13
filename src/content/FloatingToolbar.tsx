@@ -21,7 +21,7 @@
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Pencil, Ruler, MessageSquare, Zap, X, History } from 'lucide-react';
+import { Pencil, Ruler, MessageSquare, Zap, X, History, GripVertical } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/ui/utils';
@@ -66,21 +66,105 @@ interface ToolbarPillProps extends Props {
   changeLogUIStore: ChangeLogUIStore;
 }
 
+const MARGIN = 8;
+
 const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => {
+  // CLAUDE.md: hooks order is sacred. Declare every hook BEFORE any
+  // `if (...) return null` so React's hook indices stay stable across
+  // visibility flips.
+  const pillRef = React.useRef<HTMLDivElement | null>(null);
+  // Captured at pointerdown: offset from pill's top-left to the cursor.
+  // Ref instead of state so we don't trigger re-render mid-drag.
+  const dragOffsetRef = React.useRef<{ dx: number; dy: number } | null>(null);
+  const [dragging, setDragging] = React.useState(false);
+
   if (!store.visible) return null;
   const recordCount = changeLogUIStore.totalCount;
   const drawerOpen = changeLogUIStore.drawerOpen;
+
+  const onGripPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!pillRef.current) return;
+    if (e.button !== 0) return; // primary button only
+    const rect = pillRef.current.getBoundingClientRect();
+    dragOffsetRef.current = {
+      dx: e.clientX - rect.left,
+      dy: e.clientY - rect.top,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const onGripPointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!dragOffsetRef.current || !pillRef.current) return;
+    const rect = pillRef.current.getBoundingClientRect();
+    const { dx, dy } = dragOffsetRef.current;
+    const maxX = window.innerWidth - rect.width - MARGIN;
+    const maxY = window.innerHeight - rect.height - MARGIN;
+    const x = Math.max(MARGIN, Math.min(maxX, e.clientX - dx));
+    const y = Math.max(MARGIN, Math.min(maxY, e.clientY - dy));
+    store.setToolbarPosition({ x, y });
+  };
+
+  const onGripPointerUp = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!dragOffsetRef.current) return;
+    dragOffsetRef.current = null;
+    setDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  // Position style: default (null) keeps the Tailwind top-6 right-6
+  // recipe; once the user has dragged, switch to explicit left/top.
+  const positioned = store.toolbarPosition != null;
+  const positionStyle: React.CSSProperties = positioned
+    ? {
+        left: `${store.toolbarPosition!.x}px`,
+        top: `${store.toolbarPosition!.y}px`,
+        right: 'auto',
+      }
+    : {};
+
   return (
     <div
+      ref={pillRef}
       role="toolbar"
       aria-label="paperx toolbar"
       data-testid="paperx-toolbar"
-      className="paperx-surface fixed right-6 top-6 z-[2147483647] flex items-center gap-1 rounded-full p-1"
+      className={cn(
+        'paperx-surface fixed z-[2147483647] flex items-center gap-1 rounded-full p-1',
+        positioned ? null : 'right-6 top-6',
+      )}
+      style={positionStyle}
       // Defensive: any click on the toolbar must not be hijacked by the
       // picker's window-level click listener (capture phase).
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Drag toolbar"
+        title="Drag to move"
+        data-testid="paperx-toolbar-drag"
+        onPointerDown={onGripPointerDown}
+        onPointerMove={onGripPointerMove}
+        onPointerUp={onGripPointerUp}
+        onPointerCancel={onGripPointerUp}
+        // Block the picker even when the user just clicks the grip
+        // without dragging.
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          'flex h-7 w-5 cursor-grab items-center justify-center rounded-full',
+          'text-muted-foreground hover:text-foreground',
+          dragging && 'cursor-grabbing',
+        )}
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
       {TOOL_MODES.map((m) => {
         const Icon = MODE_ICONS[m];
         const active = store.mode === m;
