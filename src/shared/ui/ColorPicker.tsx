@@ -16,8 +16,8 @@
  *
  *   2. Live preview vs commit are split:
  *        - `onPreview(hex8)` — fires every drag (SketchPicker `onChange`)
- *        - `onChange(hex8)`  — fires on Apply / commit (SketchPicker
- *          `onChangeComplete`)
+ *        - `onChange(hex8)`  — fires on popover dismiss (when the user
+ *          actually moved the color) or on Recent / Preset pick
  *      Output is always an 8-char hex string `#RRGGBBAA`. The Border
  *      section in v0.5.0 consumes alpha; older callers (Background,
  *      Typography, GradientEditor) accept hex8 transparently — CSS reads
@@ -32,7 +32,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { SketchPicker, type ColorResult } from 'react-color';
 
 import { usePortalContainer } from '@/shared/ui/portal';
-import { Button } from '@/shared/ui/button';
+import { Swatch } from '@/shared/ui-v2/Swatch';
 import { cn } from '@/shared/ui/utils';
 import { DEFAULT_PRESETS } from '@/shared/ui/colorPresets';
 
@@ -54,6 +54,15 @@ export interface ColorPickerProps {
    * `colorPresets.ts` — call sites stay untouched.
    */
   presets?: readonly string[];
+  /**
+   * Trigger visual:
+   *   - 'v1' (default): legacy 24 px Tailwind pill. Background / Typography
+   *     / GradientEditor / Border-v1 consumers see no change.
+   *   - 'v2': design-v2 row primitive — 28 px tall, `--dv-bg-input` bg,
+   *     `--dv-r-input` radius, hover + focus states matching `.dv-input`.
+   *     Uses the shared `<Swatch>` from `src/shared/ui-v2/Swatch.tsx`.
+   */
+  triggerVariant?: 'v1' | 'v2';
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +248,7 @@ export function ColorPicker({
   disabled,
   ariaLabel,
   presets = DEFAULT_PRESETS,
+  triggerVariant = 'v1',
 }: ColorPickerProps): React.ReactElement {
   const portalContainer = usePortalContainer();
   const [open, setOpen] = React.useState(false);
@@ -329,35 +339,86 @@ export function ColorPicker({
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild disabled={disabled}>
-        <button
-          type="button"
-          data-testid="paperx-color-trigger"
-          aria-label={ariaLabel ?? 'Pick color'}
-          className={cn(
-            'inline-flex h-6 min-w-[7rem] items-center gap-1.5 rounded-sm border border-input bg-white/5 px-1.5',
-            'text-[11px] text-foreground transition-colors',
-            'hover:bg-accent hover:text-accent-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-          )}
-        >
-          <span
-            aria-hidden
-            className="h-3.5 w-3.5 shrink-0 rounded-sm border border-white/20"
-            style={{
-              background: showChecker ? CHECKER_BG : undefined,
-              backgroundColor: showChecker ? undefined : swatchBg,
-            }}
-          />
-          <span className="flex-1 truncate text-left uppercase tracking-wide">
-            {display.hex}
-          </span>
-          {display.alpha != null && (
-            <span className="shrink-0 tabular-nums text-muted-foreground">
-              {display.alpha}%
+        {triggerVariant === 'v2' ? (
+          <button
+            type="button"
+            data-testid="paperx-color-trigger"
+            aria-label={ariaLabel ?? 'Pick color'}
+            className="paperx-color-trigger-v2"
+          >
+            <Swatch
+              color={showChecker ? 'transparent' : swatchBg}
+              alpha={display.alpha != null ? display.alpha / 100 : 1}
+            />
+            <span
+              style={{
+                flex: 1,
+                fontSize: 'var(--dv-value-size)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: '0.02em',
+                textAlign: 'left',
+                color: 'var(--dv-text)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {display.hex}
             </span>
-          )}
-        </button>
+            {display.alpha != null && (
+              <>
+                <span
+                  aria-hidden
+                  style={{
+                    fontSize: 'var(--dv-value-size)',
+                    color: 'var(--dv-text-muted)',
+                  }}
+                >
+                  /
+                </span>
+                <span
+                  style={{
+                    fontSize: 'var(--dv-value-size)',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--dv-text-muted)',
+                  }}
+                >
+                  {display.alpha}%
+                </span>
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            data-testid="paperx-color-trigger"
+            aria-label={ariaLabel ?? 'Pick color'}
+            className={cn(
+              'inline-flex h-6 min-w-[7rem] items-center gap-1.5 rounded-sm border border-input bg-white/5 px-1.5',
+              'text-[11px] text-foreground transition-colors',
+              'hover:bg-accent hover:text-accent-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+          >
+            <span
+              aria-hidden
+              className="h-3.5 w-3.5 shrink-0 rounded-sm border border-white/20"
+              style={{
+                background: showChecker ? CHECKER_BG : undefined,
+                backgroundColor: showChecker ? undefined : swatchBg,
+              }}
+            />
+            <span className="flex-1 truncate text-left uppercase tracking-wide">
+              {display.hex}
+            </span>
+            {display.alpha != null && (
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {display.alpha}%
+              </span>
+            )}
+          </button>
+        )}
       </Popover.Trigger>
       <Popover.Portal container={portalContainer}>
         <Popover.Content
@@ -381,8 +442,8 @@ export function ColorPicker({
             onChange={handleSketchChange}
             onChangeComplete={(c) => {
               // SketchPicker fires onChangeComplete on every interaction end;
-              // we treat this as a preview-promotion. Final commit still
-              // happens via Apply or popover-dismiss.
+              // we treat this as a preview-promotion. Final commit happens
+              // when the popover dismisses (see finalizeAndClose).
               const rgba = colorResultToRgba(c);
               setDraft(rgba);
               draggedRef.current = true;
@@ -420,11 +481,6 @@ export function ColorPicker({
               onPick={(c) => commit(parseToRgba(c) ?? FALLBACK_RGBA)}
             />
           )}
-          <div className="mt-2 flex justify-end">
-            <Button size="sm" onClick={() => commit(draft)} type="button">
-              Apply
-            </Button>
-          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

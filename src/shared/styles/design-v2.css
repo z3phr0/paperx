@@ -414,6 +414,46 @@
   position: relative;
   overflow: hidden;
 }
+
+/* ============ COLOR TRIGGER V2 ============
+   Universal swatch trigger button. Mirrors .dv-input states so the
+   ColorPicker trigger reads as the same row primitive as Fill SolidRow,
+   text Input, and Dropdown. */
+.paperx-color-trigger-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: var(--dv-row-h);
+  padding: 0 8px;
+  background: var(--dv-bg-input);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-r-input);
+  color: var(--dv-text);
+  cursor: pointer;
+  transition:
+    background var(--dv-t),
+    border-color var(--dv-t),
+    box-shadow var(--dv-t);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  outline: none;
+  appearance: none;
+  font: inherit;
+}
+.paperx-color-trigger-v2:hover:not(:disabled) {
+  background: var(--dv-bg-input-hover);
+}
+.paperx-color-trigger-v2:focus-visible,
+.paperx-color-trigger-v2[data-state='open'] {
+  background: var(--dv-bg-input-active);
+  border-color: var(--dv-accent);
+  box-shadow: 0 0 0 2px var(--dv-accent-soft);
+}
+.paperx-color-trigger-v2:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .dv-swatch-checker {
   background-image:
     linear-gradient(45deg, #999 25%, transparent 25%),
