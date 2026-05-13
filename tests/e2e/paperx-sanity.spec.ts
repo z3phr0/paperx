@@ -1584,3 +1584,113 @@ test.describe('paperx design-v2 inspector', () => {
     }
   });
 });
+
+/**
+ * v0.11.0 — draggable FloatingToolbar + auto-positioned DesignPanel.
+ *
+ * Toolbar drag: grip handle on the leftmost slot of the pill. pointerdown
+ * captures, pointermove updates uiStore.toolbarPosition (sessionStorage
+ * persisted per tab), pointerup releases.
+ *
+ * Auto-position: DesignPanelV2 reads selectionStore.selectedRect via
+ * pickPanelPosition and picks the first of {right, left, below, above}
+ * placements that fits the viewport + clears the toolbar + clears the
+ * selected element bbox + handle padding.
+ */
+test.describe('paperx draggable toolbar (v0.11.0)', () => {
+  test('Drag handle moves the toolbar; sessionStorage survives a reload', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      const toolbar = page.locator('[data-testid="paperx-toolbar"]');
+      const grip = page.locator('[data-testid="paperx-toolbar-drag"]');
+      await expect(toolbar).toBeVisible();
+      await expect(grip).toBeVisible();
+
+      const before = await toolbar.boundingBox();
+      expect(before).not.toBeNull();
+
+      // Manual pointer dance — Playwright's drag helpers expect a real
+      // HTML5 DnD source. We're using pointer events so simulate them.
+      const gripBox = await grip.boundingBox();
+      expect(gripBox).not.toBeNull();
+      const startX = gripBox!.x + gripBox!.width / 2;
+      const startY = gripBox!.y + gripBox!.height / 2;
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      await page.mouse.move(startX - 200, startY + 100, { steps: 4 });
+      await page.mouse.move(startX - 200, startY + 100);
+      await page.mouse.up();
+
+      // Toolbar parked at the new location.
+      await expect
+        .poll(async () => (await toolbar.boundingBox())?.x ?? -1, { timeout: 3_000 })
+        .toBeLessThan(before!.x - 100);
+      const afterDrag = await toolbar.boundingBox();
+      expect(afterDrag!.y).toBeGreaterThan(before!.y + 50);
+
+      // Persistence: sessionStorage entry survives an in-tab reload.
+      await page.reload();
+      const toolbarAfterReload = page.locator('[data-testid="paperx-toolbar"]');
+      await expect(toolbarAfterReload).toBeVisible({ timeout: 5_000 });
+      const afterReload = await toolbarAfterReload.boundingBox();
+      expect(afterReload).not.toBeNull();
+      // Position survived (within ~4 px due to layout rounding).
+      expect(Math.abs(afterReload!.x - afterDrag!.x)).toBeLessThan(4);
+      expect(Math.abs(afterReload!.y - afterDrag!.y)).toBeLessThan(4);
+    } finally {
+      await ctx.close();
+    }
+  });
+});
+
+test.describe('paperx design panel auto-position (v0.11.0)', () => {
+  test('Panel parks to the right of the selected element with handle clearance', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const page = await openFixture(ctx);
+
+      await page.locator('[data-testid="paperx-mode-design"]').click();
+
+      // cta-btn-003 lives in the top-left of the fixture body. The panel
+      // should land to its right with a visible gap, NOT overlap it, and
+      // NOT overlap the floating toolbar.
+      const target = page.locator('[data-uid="cta-btn-003"]');
+      await target.click();
+
+      const panel = page.locator('[data-testid="paperx-v2-panel"]');
+      await expect(panel).toBeVisible({ timeout: 5_000 });
+
+      const targetBox = await target.boundingBox();
+      const panelBox = await panel.boundingBox();
+      expect(targetBox).not.toBeNull();
+      expect(panelBox).not.toBeNull();
+
+      // Panel.left > target.right + handle clearance (gap+handlePad = 24).
+      expect(panelBox!.x).toBeGreaterThan(targetBox!.x + targetBox!.width + 16);
+
+      // Panel does NOT overlap the toolbar.
+      const toolbarBox = await page
+        .locator('[data-testid="paperx-toolbar"]')
+        .boundingBox();
+      expect(toolbarBox).not.toBeNull();
+      const overlapsToolbar =
+        panelBox!.x < toolbarBox!.x + toolbarBox!.width &&
+        panelBox!.x + panelBox!.width > toolbarBox!.x &&
+        panelBox!.y < toolbarBox!.y + toolbarBox!.height &&
+        panelBox!.y + panelBox!.height > toolbarBox!.y;
+      expect(overlapsToolbar).toBe(false);
+
+      // And it does NOT overlap the selected element itself.
+      const overlapsTarget =
+        panelBox!.x < targetBox!.x + targetBox!.width &&
+        panelBox!.x + panelBox!.width > targetBox!.x &&
+        panelBox!.y < targetBox!.y + targetBox!.height &&
+        panelBox!.y + panelBox!.height > targetBox!.y;
+      expect(overlapsTarget).toBe(false);
+    } finally {
+      await ctx.close();
+    }
+  });
+});

@@ -34,8 +34,13 @@
       </div>
       <div data-uid="dist-vstack-A" style="position:absolute;left:340px;top:0;width:120px;height:60px;background:#cfc"></div>
       <div data-uid="dist-vstack-B" style="position:absolute;left:340px;top:120px;width:120px;height:60px;background:#fcc"></div>
+      <!-- diag pair sits clearly to the right + below of where the
+           v0.11.0 auto-positioned DesignPanel would land (panel goes
+           right of dist-diag-A → covers roughly x=644..924 in viewport).
+           Keeping dist-diag-B at container-left:920 puts it past the
+           panel's right edge so the e2e hover lands on B directly. -->
       <div data-uid="dist-diag-A" style="position:absolute;left:500px;top:0;width:80px;height:60px;background:#bdf"></div>
-      <div data-uid="dist-diag-B" style="position:absolute;left:660px;top:160px;width:80px;height:60px;background:#fbd"></div>
+      <div data-uid="dist-diag-B" style="position:absolute;left:920px;top:160px;width:80px;height:60px;background:#fbd"></div>
     </div>
   </body>
 </html>
