@@ -1409,8 +1409,11 @@ test.describe('paperx Border + ColorPicker (v0.5.0)', () => {
       expect(saturationCoords).not.toBeNull();
       await page.mouse.click(saturationCoords!.x, saturationCoords!.y);
 
-      // Commit via Apply.
-      await popover.getByRole('button', { name: 'Apply' }).click();
+      // Commit via popover dismiss — v0.10.1 removed the Apply button.
+      // The saturation click set draggedRef.current = true (via Sketch's
+      // onChangeComplete), so finalizeAndClose commits on close. ESC is
+      // Radix Popover's standard dismiss path.
+      await page.keyboard.press('Escape');
       await expect(popover).toHaveCount(0, { timeout: 5_000 });
 
       // Border color must have moved away from the default black.
