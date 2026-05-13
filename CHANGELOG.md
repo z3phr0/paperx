@@ -1,3 +1,12 @@
+# [0.11.0](https://github.com/z3phr0/paperx/compare/v0.10.3...v0.11.0) (2026-05-13)
+
+
+### Features
+
+* **design-v2:** DesignPanel auto-positions next to the selected element ([b4f69a7](https://github.com/z3phr0/paperx/commit/b4f69a7c4cc665561f4bccfc62944d4ed77bdc7b))
+* **stores:** toolbarPosition with sessionStorage rehydration ([6ec208c](https://github.com/z3phr0/paperx/commit/6ec208ce92b5bbabc5a22b35b1db122d43a05a2f))
+* **toolbar:** drag handle with pointer capture + viewport clamp ([525b60a](https://github.com/z3phr0/paperx/commit/525b60a90a2dc14db7908a8a62d694970d3a6a8f))
+* **utils:** pickPanelPosition strategy + shared hover-tooltip rect ([40bd658](https://github.com/z3phr0/paperx/commit/40bd65884b6d7adb45267c6967936c11f3c50ca6))
 ## [0.10.3](https://github.com/z3phr0/paperx/compare/v0.10.2...v0.10.3) (2026-05-13)
 
 
