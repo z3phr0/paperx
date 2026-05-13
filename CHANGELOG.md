@@ -1,3 +1,9 @@
+# [0.10.0](https://github.com/z3phr0/paperx/compare/v0.9.0...v0.10.0) (2026-05-13)
+
+
+### Features
+
+* **overlays:** render nearest-edge distance per visBug semantics ([f62b9b8](https://github.com/z3phr0/paperx/commit/f62b9b8547173b09c7d6b02eeefa1e191f8ea751))
 # [0.9.0](https://github.com/z3phr0/paperx/compare/v0.8.1...v0.9.0) (2026-05-13)
 
 
