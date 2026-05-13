@@ -73,12 +73,16 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
       style={{
         position: 'fixed',
         right: '16px',
-        top: '56px',
+        // 80px clears the toolbar pill (top-6 right-6 = 24px top, ~44px
+        // tall → bottom edge ~68px) with a 12px visual gap.
+        top: '80px',
         bottom: '16px',
         zIndex: 2147483646,
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: 'calc(100vh - 72px)',
+        // Hard cap; on shorter viewports the natural top+bottom stretch
+        // yields a smaller height and this becomes a no-op.
+        maxHeight: '800px',
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
