@@ -119,15 +119,15 @@ export const BorderSectionV2 = observer(({ target, styleEdit }: Props) => {
                   title="Remove border"
                 />
               </div>
-              {/* Color sub-row — reuses V1 ColorPicker (Sketch + alpha,
-                  already portal-safe through usePortalContainer). The
-                  trigger visual is V1 Tailwind; visual sharpening can
-                  be a separate sprint. */}
+              {/* Color sub-row — universal ColorPicker on the V2 trigger
+                  (28 px row, --dv-* tokens, hover/focus parity with
+                  .dv-input and Fill SolidRow). */}
               <ColorPicker
                 value={entry.color}
                 onChange={(next) => handleChangeColor(entry.id, next)}
                 onPreview={(next) => handlePreviewColor(entry.id, next)}
                 ariaLabel="Border color"
+                triggerVariant="v2"
               />
             </div>
           );
