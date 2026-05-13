@@ -10,6 +10,36 @@ import { injectable } from 'inversify';
 
 import type { ToolMode } from '@/shared/types/modes';
 
+const TOOLBAR_POS_STORAGE_KEY = 'paperx.toolbarPos';
+
+export interface Point2 {
+  x: number;
+  y: number;
+}
+
+function loadToolbarPos(): Point2 | null {
+  try {
+    const raw = sessionStorage.getItem(TOOLBAR_POS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      parsed != null &&
+      typeof parsed === 'object' &&
+      typeof (parsed as Point2).x === 'number' &&
+      typeof (parsed as Point2).y === 'number' &&
+      Number.isFinite((parsed as Point2).x) &&
+      Number.isFinite((parsed as Point2).y)
+    ) {
+      return { x: (parsed as Point2).x, y: (parsed as Point2).y };
+    }
+  } catch {
+    // sessionStorage may be denied (file://, restricted contexts); fall
+    // through and ship the default position. Matches the resilience
+    // pattern used by ColorPicker's recents persistence.
+  }
+  return null;
+}
+
 @injectable()
 export class UIStore {
   visible = false;
@@ -23,14 +53,24 @@ export class UIStore {
    * Auto-clears via setTimeout so consumers don't have to debounce.
    */
   flashCommentId: string | null = null;
+  /**
+   * FloatingToolbar pinned position (viewport-absolute, top-left origin).
+   * `null` = use the default Tailwind `top-6 right-6` corner. Set when
+   * the user drags the toolbar via its grip handle. Persists per session
+   * via sessionStorage so the position survives an in-tab reload but a
+   * fresh tab gets the familiar top-right default.
+   */
+  toolbarPosition: Point2 | null = null;
 
   private _flashTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
+    this.toolbarPosition = loadToolbarPos();
     makeObservable(this, {
       visible: observable,
       mode: observable,
       flashCommentId: observable,
+      toolbarPosition: observable,
       toggle: action,
       show: action,
       hide: action,
@@ -38,6 +78,7 @@ export class UIStore {
       toggleMode: action,
       flashAt: action,
       clearFlash: action,
+      setToolbarPosition: action,
       isActive: computed,
     });
   }
@@ -78,6 +119,21 @@ export class UIStore {
     if (this._flashTimer != null) {
       clearTimeout(this._flashTimer);
       this._flashTimer = null;
+    }
+  }
+
+  /**
+   * Update the FloatingToolbar's pinned position. Pass `null` to reset
+   * to the default top-right corner. Persists via sessionStorage; storage
+   * failures are swallowed so a restricted context never breaks the UI.
+   */
+  setToolbarPosition(next: Point2 | null): void {
+    this.toolbarPosition = next == null ? null : { x: next.x, y: next.y };
+    try {
+      if (next == null) sessionStorage.removeItem(TOOLBAR_POS_STORAGE_KEY);
+      else sessionStorage.setItem(TOOLBAR_POS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* storage denied — keep the in-memory state */
     }
   }
 }
