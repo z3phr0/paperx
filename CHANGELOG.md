@@ -1,3 +1,10 @@
+## [0.10.1](https://github.com/z3phr0/paperx/compare/v0.10.0...v0.10.1) (2026-05-13)
+
+
+### Features
+
+* **color-picker:** v2-aligned trigger using dv-row tokens, share Swatch primitive ([f70b60b](https://github.com/z3phr0/paperx/commit/f70b60b186293b472a3ecc5bc7458a278e6842d7))
+* **design-v2:** Border opts into the v2 ColorPicker trigger ([eb0ff6f](https://github.com/z3phr0/paperx/commit/eb0ff6f7b85afc9f0af907b2db5b9b1e60f6e534))
 # [0.10.0](https://github.com/z3phr0/paperx/compare/v0.9.0...v0.10.0) (2026-05-13)
 
 
