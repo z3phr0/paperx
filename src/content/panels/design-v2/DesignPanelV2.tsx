@@ -289,7 +289,6 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
               target={target}
               styleEdit={styleEdit}
               sectionRef={textSectionRef}
-              fmtOpen={fmtOpen}
               onToggleFormatting={() => setFmtOpen((o) => !o)}
             />
             <FillSection target={target} styleEdit={styleEdit} />

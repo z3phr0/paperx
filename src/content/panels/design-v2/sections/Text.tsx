@@ -13,7 +13,7 @@ import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
-import { Section, Input, Dropdown, Segmented, IconButton } from '@/shared/ui-v2';
+import { Section, Input, Dropdown, Segmented, IconButton, Icon } from '@/shared/ui-v2';
 import { useSeededValue } from '../hooks/useComputedStyle';
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -149,15 +149,6 @@ const IconAlignV: React.FC<GlyphProps & { dir: 'top' | 'middle' | 'bottom' }> = 
   );
 };
 
-const IconTextSliders: React.FC<GlyphProps> = ({ size = 14 }) => (
-  <Glyph size={size}>
-    <line x1="7" y1="4" x2="7" y2="20" strokeWidth={1.5} />
-    <line x1="17" y1="4" x2="17" y2="20" strokeWidth={1.5} />
-    <circle cx="7" cy="9" r="2.2" />
-    <circle cx="17" cy="15" r="2.2" />
-  </Glyph>
-);
-
 export {
   IconFontFamily,
   IconFontWeight,
@@ -249,7 +240,6 @@ export interface TextSectionProps {
   /** Ref attached to the section wrapper. Used by the Formatting popup
    *  to align its top edge with this section's top in viewport coords. */
   sectionRef?: React.Ref<HTMLDivElement>;
-  fmtOpen?: boolean;
   onToggleFormatting?: () => void;
 }
 
@@ -258,7 +248,6 @@ export const TextSection = observer(
     target,
     styleEdit,
     sectionRef,
-    fmtOpen = false,
     onToggleFormatting,
   }: TextSectionProps) => {
     const [fontFamily, setFontFamily] = React.useState<string>(() =>
@@ -347,9 +336,8 @@ export const TextSection = observer(
           data-testid="paperx-v2-text"
           actions={
             <IconButton
-              icon={<IconTextSliders size={14} />}
+              icon={<Icon name="sliders" size={14} />}
               title="Formatting"
-              active={fmtOpen}
               onClick={onToggleFormatting}
               data-testid="paperx-v2-text-fmt-toggle"
             />
