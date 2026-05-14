@@ -202,7 +202,21 @@ const Thumbnail: React.FC<{ comment: PaperxComment }> = ({ comment }) => {
           data-testid="paperx-comment-thumb-img"
           src={comment.thumbnailDataUrl!}
           alt=""
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            // v0.13.1: contain over cover — the snapdom capture now
+            // includes the parent context (with a priority-colored
+            // frame around the actual commented child), so cropping
+            // half of it would defeat the purpose. Letterbox empty
+            // space transitions cleanly into the wrapper's bg-input.
+            objectFit: 'contain',
+            display: 'block',
+            background: 'var(--dv-bg-input)',
+            // Chromium hint: bilinear instead of trilinear when scaling
+            // down — crisper edges for UI screenshots.
+            imageRendering: '-webkit-optimize-contrast',
+          }}
         />
       ) : skeleton ? (
         <div

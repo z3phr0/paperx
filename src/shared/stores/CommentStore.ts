@@ -18,6 +18,7 @@ import { snapdom } from '@zumer/snapdom';
 import { buildSelector, readDataUid } from '@/shared/types/changes';
 import {
   COMMENTS_SCHEMA,
+  COMMENT_PRI_MAP,
   DEFAULT_PRIORITY,
   type CommentBbox,
   type CommentPriority,
@@ -56,17 +57,73 @@ function rgbToHex(rgb: string): string | null {
   return `#${hex(r!)}${hex(g!)}${hex(b!)}`;
 }
 
-async function capturePngDataUrl(el: HTMLElement): Promise<string | null> {
-  // snapdom returns a CaptureResult; toCanvas raster's the SVG snapshot
-  // and we read it back as a base64 PNG. Scale 0.5 keeps the thumbnail
-  // payload modest (most rows render the image at h-12 anyway).
+/** Pick a snapdom target that gives useful screenshot context.
+ *  Parent if it exists and isn't <html> / <body> (avoid full-page
+ *  captures that blow up the data URL size); otherwise the element
+ *  itself. v0.13.1: was always `el`, which produced thumbnails of
+ *  isolated spans / small buttons with no surrounding context. */
+function pickCaptureTarget(el: HTMLElement): HTMLElement {
+  const p = el.parentElement;
+  if (!p) return el;
+  const tag = p.tagName.toLowerCase();
+  if (tag === 'body' || tag === 'html') return el;
+  return p;
+}
+
+async function capturePngDataUrl(
+  target: HTMLElement,
+  priority: CommentPriority,
+): Promise<string | null> {
   try {
-    const result = await snapdom(el, { fast: true, scale: 0.5, embedFonts: false });
+    const captureTarget = pickCaptureTarget(target);
+    // scale=2 keeps the thumbnail crisp at DPR=2 displays for parents
+    // up to ~600px wide. Larger parents naturally shrink via
+    // `object-fit: contain` on the consumer side (CommentPanelV2
+    // Thumbnail). v0.13.0 shipped scale=0.5 which read as visibly
+    // blurry once the row started rendering at panel width.
+    const result = await snapdom(captureTarget, {
+      fast: true,
+      scale: 2,
+      embedFonts: false,
+    });
     const canvas = await result.toCanvas();
+
+    // When we walked up a level, draw a priority-colored frame at the
+    // child's position inside the parent capture so the reviewer can
+    // tell which sub-region of the screenshot was actually commented
+    // on. Visually paired with the on-DOM CommentAnnotations chrome.
+    if (captureTarget !== target) {
+      const parentRect = captureTarget.getBoundingClientRect();
+      const childRect = target.getBoundingClientRect();
+      const scaleX = canvas.width / parentRect.width;
+      const scaleY = canvas.height / parentRect.height;
+      if (
+        Number.isFinite(scaleX) &&
+        Number.isFinite(scaleY) &&
+        scaleX > 0 &&
+        scaleY > 0
+      ) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const x = (childRect.left - parentRect.left) * scaleX;
+          const y = (childRect.top - parentRect.top) * scaleY;
+          const w = childRect.width * scaleX;
+          const h = childRect.height * scaleY;
+          const color = COMMENT_PRI_MAP[priority].dot;
+          // 2 CSS px stroke @ snapdom scale — keeps the frame from
+          // reading as hairline on big parents or chunky on small
+          // ones. Min 2 device px so it never disappears.
+          ctx.lineWidth = Math.max(2, 2 * Math.min(scaleX, scaleY));
+          ctx.strokeStyle = color;
+          ctx.strokeRect(x, y, w, h);
+        }
+      }
+    }
+
     return canvas.toDataURL('image/png');
   } catch (err) {
-    // Don't surface to UI — fallback (color swatch / placeholder) handles
-    // the empty case gracefully.
+    // Don't surface to UI — fallback (color swatch / placeholder)
+    // handles the empty case gracefully.
     console.warn('[paperx] snapdom capture failed', err);
     return null;
   }
@@ -143,8 +200,10 @@ export class CommentStore {
 
     // Fire-and-forget snapdom capture. We do not block the user on
     // capture; if it fails, the row falls back to the sampled color
-    // swatch + tag/size block.
-    void capturePngDataUrl(target).then((dataUrl) => {
+    // swatch + tag/size block. v0.13.1: priority threads through so
+    // capturePngDataUrl can draw the priority frame on the parent
+    // screenshot.
+    void capturePngDataUrl(target, priority).then((dataUrl) => {
       if (dataUrl) this.setThumbnail(c.id, dataUrl);
     });
 
