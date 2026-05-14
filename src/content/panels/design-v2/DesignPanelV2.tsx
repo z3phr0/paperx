@@ -28,6 +28,11 @@ import { AppearanceSection } from './sections/Appearance';
 import { FillSection } from './sections/Fill';
 import { BorderSectionV2 } from './sections/Border';
 import { RadiusSectionV2 } from './sections/Radius';
+import { TextSection } from './sections/Text';
+import {
+  TextFormattingPopup,
+  POPUP_WIDTH as TEXT_FMT_POPUP_WIDTH,
+} from './sections/TextFormattingPopup';
 import { BoxModelDiagram } from './sections/BoxModelDiagram';
 import { CodeBlock } from './sections/CodeBlock';
 
@@ -89,12 +94,68 @@ function toolbarBbox(
   };
 }
 
+/**
+ * Anchor between DesignPanelV2 and TextFormattingPopup. Reads the
+ * section ref after layout, derives `top` from the section's viewport
+ * rect (user-requested: modal.top === Text Section header.top), then
+ * picks `left` to the panel's left side, falling back to right when the
+ * left side would overflow the viewport.
+ *
+ * Recomputes on every parent render. Stable state via early-bail (React
+ * 18 skips re-renders for unchanged state), so a no-op scroll doesn't
+ * thrash.
+ */
+const TextFormattingPopupAnchor: React.FC<{
+  target: HTMLElement;
+  styleEdit: IStyleEditService;
+  sectionRef: React.RefObject<HTMLDivElement>;
+  panelLeft: number;
+  panelWidth: number;
+  gap: number;
+  viewport: { width: number; height: number };
+  onClose: () => void;
+}> = ({ target, styleEdit, sectionRef, panelLeft, panelWidth, gap, viewport, onClose }) => {
+  const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null);
+  React.useLayoutEffect(() => {
+    const el = sectionRef.current;
+    if (el == null) return;
+    const rect = el.getBoundingClientRect();
+    const top = Math.max(8, Math.min(rect.top, viewport.height - 200));
+    // Prefer left of panel. If overflows viewport, flip to right of panel.
+    const leftCandidate = panelLeft - TEXT_FMT_POPUP_WIDTH - gap;
+    const left =
+      leftCandidate < 8
+        ? Math.min(panelLeft + panelWidth + gap, viewport.width - TEXT_FMT_POPUP_WIDTH - 8)
+        : leftCandidate;
+    setPos((prev) =>
+      prev != null && prev.top === top && prev.left === left ? prev : { top, left },
+    );
+  });
+  if (pos == null) return null;
+  return (
+    <TextFormattingPopup
+      target={target}
+      styleEdit={styleEdit}
+      onClose={onClose}
+      top={pos.top}
+      left={pos.left}
+    />
+  );
+};
+
 export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: Props) => {
   const isDesign = uiStore.mode === 'design';
   const isRuler = uiStore.mode === 'ruler';
   const visible =
     uiStore.visible && (isDesign || isRuler) && selectionStore.selected != null;
   const [sub, setSub] = React.useState<SubTab>('design');
+  const [fmtOpen, setFmtOpen] = React.useState(false);
+  const textSectionRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-close the popup when context shifts under it.
+  React.useEffect(() => {
+    setFmtOpen(false);
+  }, [selectionStore.selected, uiStore.mode, sub]);
   // Viewport snapshot — bumped on resize/scroll so we re-pick the
   // position. We deliberately do NOT track the panel's rendered height
   // (no ResizeObserver loop) and instead use the conservative max for
@@ -224,6 +285,13 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
           <>
             <FrameSection target={target} styleEdit={styleEdit} />
             <AppearanceSection target={target} styleEdit={styleEdit} />
+            <TextSection
+              target={target}
+              styleEdit={styleEdit}
+              sectionRef={textSectionRef}
+              fmtOpen={fmtOpen}
+              onToggleFormatting={() => setFmtOpen((o) => !o)}
+            />
             <FillSection target={target} styleEdit={styleEdit} />
             <BorderSectionV2 target={target} styleEdit={styleEdit} />
             <RadiusSectionV2 target={target} styleEdit={styleEdit} />
@@ -231,6 +299,18 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
         )}
         {showInspect && <InspectContent target={target} />}
       </div>
+      {fmtOpen && isDesign && !showInspect && (
+        <TextFormattingPopupAnchor
+          target={target}
+          styleEdit={styleEdit}
+          sectionRef={textSectionRef}
+          panelLeft={placement.left}
+          panelWidth={PANEL_WIDTH}
+          gap={PANEL_GAP}
+          viewport={vp}
+          onClose={() => setFmtOpen(false)}
+        />
+      )}
     </div>
   );
 });
