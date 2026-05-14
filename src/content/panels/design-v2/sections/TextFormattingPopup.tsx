@@ -83,7 +83,7 @@ const IconX: React.FC<{ size?: number }> = ({ size = 12 }) => (
 /* ─────────────────────────────────────────────────────────────────────
  * Constants
  * ──────────────────────────────────────────────────────────────────── */
-export const POPUP_WIDTH = 340;
+export const POPUP_WIDTH = 280;
 
 type Alignment4 = 'left' | 'center' | 'right' | 'justify';
 type Case4 = '' | 'italic' | 'upper' | 'lower' | 'title';
@@ -150,7 +150,11 @@ function readMaxLines(target: HTMLElement): number {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
- * FmtRow — 92px label | content grid
+ * FmtRow — 64px label | content grid. Label column tuned for short
+ * single-word labels (Alignment / Case / Wrap / Truncation / Max lines)
+ * so the control side has room inside the 280-wide popup. Label font
+ * size + color mirror `.dv-row-label` so the popup reads as the same
+ * primitive as the main panel's row.
  * ──────────────────────────────────────────────────────────────────── */
 const FmtRow: React.FC<{ label: string; children: React.ReactNode }> = ({
   label,
@@ -159,17 +163,18 @@ const FmtRow: React.FC<{ label: string; children: React.ReactNode }> = ({
   <div
     style={{
       display: 'grid',
-      gridTemplateColumns: '92px 1fr',
+      gridTemplateColumns: '64px 1fr',
       alignItems: 'center',
-      gap: 12,
+      gap: 8,
       minHeight: 'var(--dv-row-h)',
     }}
   >
     <div
       style={{
-        fontSize: 'var(--dv-value-size)',
-        color: 'var(--dv-text-secondary)',
+        fontSize: 'var(--dv-label-size)',
+        color: 'var(--dv-label)',
         fontWeight: 500,
+        letterSpacing: '-0.005em',
       }}
     >
       {label}
@@ -360,19 +365,21 @@ export const TextFormattingPopup = observer(
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header — height matches a row + 4 px so the title sits on the
+            same baseline as the inspector's .dv-tabs strip without
+            inheriting the active-tab underline. */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             borderBottom: '1px solid var(--dv-divider)',
-            height: 36,
+            height: 32,
           }}
         >
           <div
             style={{
-              padding: '0 14px',
-              fontSize: 12.5,
+              padding: '0 var(--dv-section-pad-x)',
+              fontSize: 12,
               fontWeight: 600,
               color: 'var(--dv-text)',
               letterSpacing: '-0.005em',
@@ -385,7 +392,7 @@ export const TextFormattingPopup = observer(
             type="button"
             onClick={onClose}
             className="dv-icon-btn"
-            style={{ margin: '0 6px', width: 24, height: 24 }}
+            style={{ margin: '0 6px' }}
             title="Close"
             data-testid="paperx-v2-text-fmt-close"
           >
@@ -394,11 +401,16 @@ export const TextFormattingPopup = observer(
         </div>
 
         {/* Preview */}
-        <div style={{ padding: '14px 14px 0' }}>
+        <div
+          style={{
+            padding:
+              'var(--dv-section-pad-y) var(--dv-section-pad-x) 0',
+          }}
+        >
           <div
             style={{
-              minHeight: 180,
-              padding: '24px 22px',
+              minHeight: 100,
+              padding: '14px var(--dv-section-pad-x)',
               background: 'var(--dv-bg-input)',
               border: '1px solid var(--dv-border)',
               borderRadius: 'var(--dv-r-section)',
@@ -414,7 +426,7 @@ export const TextFormattingPopup = observer(
             {trunc && (
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: 10,
                   textAlign: 'center',
                   fontSize: 11,
                   color: 'var(--dv-text-muted)',
@@ -430,10 +442,10 @@ export const TextFormattingPopup = observer(
         {/* Controls */}
         <div
           style={{
-            padding: 14,
+            padding: 'var(--dv-section-pad-y) var(--dv-section-pad-x)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--dv-gap-y)',
           }}
         >
           <FmtRow label="Alignment">
