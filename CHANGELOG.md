@@ -1,3 +1,11 @@
+## [0.11.1](https://github.com/z3phr0/paperx/compare/v0.11.0...v0.11.1) (2026-05-14)
+
+
+### Features
+
+* **color-picker:** v2 trigger left-aligns hex + alpha cluster ([9d81594](https://github.com/z3phr0/paperx/commit/9d81594cc20bf300e37c0ae3d1bff9c8920922b5))
+* **design-v2:** Border style switcher uses fixed icon trigger ([89e1c36](https://github.com/z3phr0/paperx/commit/89e1c3663648be59d1612a2dffac7887fd69d311))
+* **design-v2:** Fill section commits background-color via useFillEditor ([0d5723f](https://github.com/z3phr0/paperx/commit/0d5723fff7a353c289db1171859b643bea262537))
 # [0.11.0](https://github.com/z3phr0/paperx/compare/v0.10.3...v0.11.0) (2026-05-13)
 
 
