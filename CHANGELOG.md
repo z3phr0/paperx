@@ -1,3 +1,9 @@
+## [0.11.4](https://github.com/z3phr0/paperx/compare/v0.11.3...v0.11.4) (2026-05-14)
+
+
+### Bug Fixes
+
+* **design-v2:** Inspect CSS shows computed rules + TW dedups overrides ([4237a31](https://github.com/z3phr0/paperx/commit/4237a31bcbfdfef8b53a3193ea21c4823e0e8f39))
 ## [0.11.3](https://github.com/z3phr0/paperx/compare/v0.11.2...v0.11.3) (2026-05-14)
 
 
