@@ -160,6 +160,45 @@ export {
 };
 
 /* ─────────────────────────────────────────────────────────────────────
+ * Text-bearing tag allowlist
+ *
+ * The Text section is only meaningful for elements that actually render
+ * text. font-* / text-* edits on <img>, <svg>, <video>, layout
+ * containers, form inputs, etc. are either no-ops or misleading, so
+ * DesignPanelV2 hides the section + Formatting popup when the selected
+ * element isn't in this set. v0.12.3 introduced this gate after the
+ * v0.12.0–v0.12.2 panels were observed showing Text on media and
+ * pure layout selections.
+ * ──────────────────────────────────────────────────────────────────── */
+const TEXT_TAGS = new Set<string>([
+  // Block-level text the user explicitly named + headings + quotes
+  'div', 'p', 'span',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'blockquote', 'pre',
+  // List items
+  'li', 'dt', 'dd',
+  // Anchor / button / label — render their own text node
+  'a', 'button', 'label',
+  // Inline text & emphasis
+  'strong', 'em', 'b', 'i', 'u', 's',
+  'small', 'mark', 'sub', 'sup',
+  'code', 'kbd', 'samp', 'var',
+  'q', 'cite', 'abbr', 'dfn', 'time',
+  'ins', 'del',
+  // Table text cells
+  'td', 'th', 'caption',
+  // Other semantic text
+  'figcaption', 'summary', 'legend',
+]);
+
+/** Whether the Text section is meaningful for this element. Tag-only
+ *  heuristic: predictable, no false negatives on empty <div> wrappers
+ *  the user might fill later. */
+export function isTextElement(target: HTMLElement): boolean {
+  return TEXT_TAGS.has(target.tagName.toLowerCase());
+}
+
+/* ─────────────────────────────────────────────────────────────────────
  * Preset lists
  * ──────────────────────────────────────────────────────────────────── */
 const FONT_FAMILY_PRESETS = [

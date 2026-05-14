@@ -28,7 +28,7 @@ import { AppearanceSection } from './sections/Appearance';
 import { FillSection } from './sections/Fill';
 import { BorderSectionV2 } from './sections/Border';
 import { RadiusSectionV2 } from './sections/Radius';
-import { TextSection } from './sections/Text';
+import { TextSection, isTextElement } from './sections/Text';
 import {
   TextFormattingPopup,
   POPUP_WIDTH as TEXT_FMT_POPUP_WIDTH,
@@ -285,12 +285,14 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
           <>
             <FrameSection target={target} styleEdit={styleEdit} />
             <AppearanceSection target={target} styleEdit={styleEdit} />
-            <TextSection
-              target={target}
-              styleEdit={styleEdit}
-              sectionRef={textSectionRef}
-              onToggleFormatting={() => setFmtOpen((o) => !o)}
-            />
+            {isTextElement(target) && (
+              <TextSection
+                target={target}
+                styleEdit={styleEdit}
+                sectionRef={textSectionRef}
+                onToggleFormatting={() => setFmtOpen((o) => !o)}
+              />
+            )}
             <FillSection target={target} styleEdit={styleEdit} />
             <BorderSectionV2 target={target} styleEdit={styleEdit} />
             <RadiusSectionV2 target={target} styleEdit={styleEdit} />
@@ -298,7 +300,7 @@ export const DesignPanelV2 = observer(({ uiStore, selectionStore, styleEdit }: P
         )}
         {showInspect && <InspectContent target={target} />}
       </div>
-      {fmtOpen && isDesign && !showInspect && (
+      {fmtOpen && isDesign && !showInspect && isTextElement(target) && (
         <TextFormattingPopupAnchor
           target={target}
           styleEdit={styleEdit}
