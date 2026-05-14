@@ -43,10 +43,11 @@ import { SpacingGuides } from './overlays/SpacingGuides';
 import { HoverGuides } from './overlays/HoverGuides';
 import { DistanceGuides } from './overlays/DistanceGuides';
 import { LocateFlash } from './overlays/LocateFlash';
+import { CommentAnnotations } from './overlays/CommentAnnotations';
 import { SnapGuidelines } from './overlays/snap/SnapGuidelines';
 import { SnapStore } from '@/shared/stores/SnapStore';
 import { DesignPanelV2 } from './panels/design-v2';
-import { CommentPanel } from './panels/comment';
+import { CommentPanelV2 } from './panels/comment-v2';
 import { TransitionPanel } from './panels/transition';
 import { ChangeLog } from './panels/changelog';
 import { CommentStore } from '@/shared/stores/CommentStore';
@@ -253,12 +254,17 @@ export const FloatingToolbar = observer(({ store }: Props) => {
       <HoverGuides uiStore={store} selectionStore={selectionStore} />
       <DistanceGuides uiStore={store} selectionStore={selectionStore} />
       <LocateFlash uiStore={store} commentStore={commentStore} />
+      <CommentAnnotations
+        uiStore={store}
+        selectionStore={selectionStore}
+        commentStore={commentStore}
+      />
       <DesignPanelV2 uiStore={store} selectionStore={selectionStore} styleEdit={styleEdit} />
       {/* Legacy V1 RulerPanel retired in design-v2: ruler mode now
           renders the V2 Inspect view (BoxModel + CodeBlock) through
           DesignPanelV2 above. The V1 file is kept in tree for rollback
           but no longer mounted. */}
-      <CommentPanel
+      <CommentPanelV2
         uiStore={store}
         selectionStore={selectionStore}
         commentStore={commentStore}
