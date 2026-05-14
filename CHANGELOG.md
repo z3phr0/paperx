@@ -1,3 +1,13 @@
+# [0.13.0](https://github.com/z3phr0/paperx/compare/v0.12.3...v0.13.0) (2026-05-14)
+
+
+### Features
+
+* **overlays:** CommentAnnotations — priority chrome + teardrop pin ([74b6d36](https://github.com/z3phr0/paperx/commit/74b6d36cec783c0ebf96be4cc7199347d235b120))
+* **panels:** CommentPanelV2 — v2 tokens + DOM-following placement ([52707f3](https://github.com/z3phr0/paperx/commit/52707f3f18a419a74cd68f7e68186ee6ca44df73)), closes [CommentPanel#L327-407](https://github.com/CommentPanel/issues/L327-407)
+* **stores:** CommentStore.setResolved + import normalization ([5d6e7df](https://github.com/z3phr0/paperx/commit/5d6e7df467aa861f3a3fba48bb8cc28a67b65da5))
+* **types:** resolved field + COMMENT_PRI_MAP palette for v0.13.0 ([05225c7](https://github.com/z3phr0/paperx/commit/05225c74f39f95a6793429c5b09c3ee0d53b0872))
+* **ui-v2:** reset / download / upload / x icons for Comment v2 ([f1dc3b2](https://github.com/z3phr0/paperx/commit/f1dc3b20e2fb2dfe8c336aa3a7806f92709e89f8))
 ## [0.12.3](https://github.com/z3phr0/paperx/compare/v0.12.2...v0.12.3) (2026-05-14)
 
 
