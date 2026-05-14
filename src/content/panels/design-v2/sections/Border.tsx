@@ -20,7 +20,7 @@ import {
   STYLE_OPTIONS,
   useBorderEditor,
 } from '@/shared/design-logic/border';
-import { Dropdown, Icon, IconButton, Input, Section } from '@/shared/ui-v2';
+import { Dropdown, Icon, IconButton, IconDropdown, Input, Section } from '@/shared/ui-v2';
 import { ColorPicker } from '@/shared/ui/ColorPicker';
 
 interface Props {
@@ -51,11 +51,14 @@ export const BorderSectionV2 = observer(({ target, styleEdit }: Props) => {
       collapsed={entries.length === 0}
       actions={
         <>
-          <Dropdown
+          <IconDropdown
+            icon="sliders"
+            title="Border style"
             value={globalStyle}
             onChange={(s) => handleSetStyle(s)}
             items={STYLE_OPTIONS.map((s) => ({ value: s, label: s }))}
             data-testid="paperx-border-style"
+            itemTestidPrefix="paperx-border-style-opt"
           />
           <IconButton
             icon="plus"

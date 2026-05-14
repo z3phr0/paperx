@@ -13,3 +13,4 @@ export { Swatch, type SwatchProps } from './Swatch';
 export { Stepper, type StepperProps } from './Stepper';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { Dropdown, type DropdownItem, type DropdownProps } from './Dropdown';
+export { IconDropdown, type IconDropdownProps } from './IconDropdown';
