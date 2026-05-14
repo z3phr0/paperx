@@ -1,3 +1,9 @@
+## [0.12.2](https://github.com/z3phr0/paperx/compare/v0.12.1...v0.12.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **design-v2/text:** keep Formatting popup open through dropdown clicks ([0c49b1c](https://github.com/z3phr0/paperx/commit/0c49b1cdc96426f729e07501be68f20d812febc0)), closes [#paperx-portal-layer](https://github.com/z3phr0/paperx/issues/paperx-portal-layer)
 ## [0.12.1](https://github.com/z3phr0/paperx/compare/v0.12.0...v0.12.1) (2026-05-14)
 
 
