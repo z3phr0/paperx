@@ -1,3 +1,14 @@
+## [0.11.3](https://github.com/z3phr0/paperx/compare/v0.11.2...v0.11.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* **design-v2:** Fill auto-detects stylesheet-driven background colors ([edf4545](https://github.com/z3phr0/paperx/commit/edf45458ac0dde017a1c89b92587c2f327ab3a57))
+
+
+### Features
+
+* **design-v2:** Inspect CodeBlock mirrors the real DOM class + style ([b34a909](https://github.com/z3phr0/paperx/commit/b34a9091e89f5b5adc40a7e315123649022c2c52))
 ## [0.11.2](https://github.com/z3phr0/paperx/compare/v0.11.1...v0.11.2) (2026-05-14)
 
 
