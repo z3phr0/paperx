@@ -149,10 +149,14 @@ const PriorityPills: React.FC<PriorityPillsProps> = ({ value, onChange }) => (
   </div>
 );
 
-const PriBadge: React.FC<{ priority: CommentPriority }> = ({ priority }) => {
+const PriBadge: React.FC<{
+  priority: CommentPriority;
+  'data-testid'?: string;
+}> = ({ priority, ...rest }) => {
   const c = COMMENT_PRI_MAP[priority];
   return (
     <span
+      data-testid={rest['data-testid']}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -169,6 +173,7 @@ const PriBadge: React.FC<{ priority: CommentPriority }> = ({ priority }) => {
       }}
     >
       <span
+        aria-hidden
         style={{ width: 5, height: 5, borderRadius: '50%', background: c.dot }}
       />
       {priority}
@@ -299,9 +304,12 @@ const CommentListItem: React.FC<CommentListItemProps> = ({
           marginBottom: 8,
         }}
       >
-        <PriBadge priority={comment.priority} />
-        <span
+        <PriBadge
+          priority={comment.priority}
           data-testid={`paperx-comment-priority-${comment.id}`}
+        />
+        <span
+          data-testid={`paperx-comment-selector-${comment.id}`}
           style={{
             flex: 1,
             minWidth: 0,

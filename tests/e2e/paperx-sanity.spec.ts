@@ -299,7 +299,9 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
 
       // Listed comment text must appear, count line should reflect it.
       await expect(panel.getByText(NOTE, { exact: false })).toBeVisible();
-      await expect(panel.getByText('Comments here (1)', { exact: false })).toBeVisible();
+      // v0.13.0: unified `Comments · N` Section header replaces the v1
+      // dual "Comments here (N)" / "All comments (N)" layout.
+      await expect(panel.getByText('Comments · 1', { exact: false })).toBeVisible();
       // Submitting an empty draft was already disabled; submitting clears
       // the draft. A second submit attempt without re-entering text
       // should be a no-op (button disabled), so the count stays at 1.
@@ -819,7 +821,7 @@ test.describe('paperx Sprint 3 (F + G)', () => {
  * spacing visualization + import/export.
  */
 test.describe('paperx Comment overhaul (v0.2.1)', () => {
-  test('Priority chip cycles P2 → P0 → P1 on consecutive clicks', async () => {
+  test('Composer priority pills set the row priority badge on submit', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
@@ -828,21 +830,31 @@ test.describe('paperx Comment overhaul (v0.2.1)', () => {
       await page.locator('[data-uid="cta-btn-003"]').click();
 
       await page.locator('[data-testid="paperx-comment-input"]').fill('check this');
+      // v0.13.0: the priority cycle UX (click chip on row) was retired
+      // in favor of explicit P0/P1/P2 pills in the composer. The list
+      // item's PriBadge is now read-only; the priority is locked in
+      // at submit time from whichever composer pill is active.
+      await page.locator('[data-testid="paperx-comment-priority-pick-P0"]').click();
       await page.locator('[data-testid="paperx-comment-submit"]').click();
 
-      // Find the priority chip on the new comment row. It carries
-      // testid paperx-comment-priority-${id}; we don't know the id, so
-      // match by testid prefix.
-      const chip = page.locator('[data-testid^="paperx-comment-priority-cmt-"]').first();
+      const chip = page
+        .locator('[data-testid^="paperx-comment-priority-cmt-"]')
+        .first();
       await expect(chip).toBeVisible({ timeout: 5_000 });
-      await expect(chip).toHaveText('P2');
-
-      await chip.click();
+      // The PriBadge label is rendered inline with a leading dot span;
+      // its trimmed text is just the priority code.
       await expect(chip).toHaveText('P0');
-      await chip.click();
-      await expect(chip).toHaveText('P1');
-      await chip.click();
-      await expect(chip).toHaveText('P2');
+
+      // A second comment with the P2 pill should pin P2 to its own row
+      // without retroactively mutating the first row.
+      await page.locator('[data-testid="paperx-comment-input"]').fill('another');
+      await page.locator('[data-testid="paperx-comment-priority-pick-P2"]').click();
+      await page.locator('[data-testid="paperx-comment-submit"]').click();
+
+      const chips = page.locator('[data-testid^="paperx-comment-priority-cmt-"]');
+      // Newest comment renders first (reversed in the panel).
+      await expect(chips.nth(0)).toHaveText('P2');
+      await expect(chips.nth(1)).toHaveText('P0');
     } finally {
       await ctx.close();
     }
