@@ -285,12 +285,16 @@
   width: 100%;
 }
 .dv-seg-item {
-  flex: 1;
+  /* v0.11.6: `flex: 1` moved into the .dv-full override so non-full
+     segmented (e.g. Inspect CSS/Tailwind) sizes each segment by content
+     rather than forcing equal width. Fill keeps its three-up layout via
+     the .dv-full class. */
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 32px;
-  padding: 0 6px;
+  padding: 0 10px;
   border-radius: calc(var(--dv-r-segment) - 2px);
   background: transparent;
   border: none;
@@ -301,6 +305,10 @@
   font-weight: 500;
   position: relative;
   font-family: inherit;
+}
+.dv-segmented.dv-full .dv-seg-item {
+  flex: 1;
+  padding: 0 6px;
 }
 .dv-seg-item:hover {
   color: var(--dv-text);
