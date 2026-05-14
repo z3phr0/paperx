@@ -1,3 +1,9 @@
+## [0.11.2](https://github.com/z3phr0/paperx/compare/v0.11.1...v0.11.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **ui-v2:** forwardRef IconButton so asChild slots can attach refs ([4f1781e](https://github.com/z3phr0/paperx/commit/4f1781e0836a8d896b28d98c5249c1186a4cce93))
 ## [0.11.1](https://github.com/z3phr0/paperx/compare/v0.11.0...v0.11.1) (2026-05-14)
 
 
