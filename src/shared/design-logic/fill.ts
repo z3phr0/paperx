@@ -34,22 +34,29 @@ export function hex8ToRgba(hex: string): string {
 }
 
 /**
- * Derive the (single) fill entry from the target's inline style.
- * Empty / transparent / unset inline background-color → no entry, so the
- * section starts collapsed for a fresh element and the user materialises
- * the fill by clicking +.
+ * Derive the (single) fill entry from the target. Inline `background-color`
+ * wins; otherwise we fall back to the computed value so a stylesheet- or
+ * Tailwind-driven background still materialises an editable entry.
+ *
+ * Auto-detected entries do NOT write inline style on detect — the entry
+ * is purely informational until the user actively edits, at which point
+ * the first commit hits StyleEditService + ChangeLog.
  */
 export function deriveFillEntries(target: HTMLElement): FillEntry[] {
   const inline = target.style.backgroundColor;
-  if (!inline) return [];
-  if (inline === 'transparent') return [];
-  return [
-    {
-      id: newId(),
-      color: cssColorToHex8(inline),
-      visible: true,
-    },
-  ];
+  if (inline) {
+    if (inline === 'transparent') return [];
+    return [{ id: newId(), color: cssColorToHex8(inline), visible: true }];
+  }
+  try {
+    const computed = getComputedStyle(target).backgroundColor;
+    if (computed && computed !== 'rgba(0, 0, 0, 0)' && computed !== 'transparent') {
+      return [{ id: newId(), color: cssColorToHex8(computed), visible: true }];
+    }
+  } catch {
+    // computed read failed (detached / cross-origin frame) — fall through
+  }
+  return [];
 }
 
 export interface UseFillEditorArgs {
