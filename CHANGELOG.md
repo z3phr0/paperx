@@ -1,3 +1,9 @@
+## [0.12.3](https://github.com/z3phr0/paperx/compare/v0.12.2...v0.12.3) (2026-05-14)
+
+
+### Features
+
+* **design-v2/text:** only render Text section for text-bearing tags ([281cb3e](https://github.com/z3phr0/paperx/commit/281cb3e471733462400791d554d83959712df3bc))
 ## [0.12.2](https://github.com/z3phr0/paperx/compare/v0.12.1...v0.12.2) (2026-05-14)
 
 
