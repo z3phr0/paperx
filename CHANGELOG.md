@@ -1,3 +1,9 @@
+## [0.11.10](https://github.com/z3phr0/paperx/compare/v0.11.9...v0.11.10) (2026-05-14)
+
+
+### Bug Fixes
+
+* **changelog:** toolbar History button toggles panel visibility, not body collapse ([5988fea](https://github.com/z3phr0/paperx/commit/5988fea49e58e8882429af08d65fbcfcce948931))
 ## [0.11.9](https://github.com/z3phr0/paperx/compare/v0.11.8...v0.11.9) (2026-05-14)
 
 
