@@ -1,12 +1,22 @@
 /**
- * CodeBlock — Inspect sub-tab snippets in CSS / Tailwind / React (JSX)
- * dialects. Read-only mirror of `getComputedStyle(target)`.
+ * CodeBlock — Inspect sub-tab snippets that mirror the element's real
+ * DOM attributes.
+ *
+ * - CSS view: shows the element's literal `class=""` and `style=""`
+ *   attributes, split into per-declaration lines for readability.
+ * - Tailwind view: a list of [class → resolved CSS] pairs. Each item's
+ *   top row is the class name; the bottom row is the declarations the
+ *   class produces in the host stylesheet (or inline style at the tail).
+ *   The copy button concatenates every Tailwind class so the result is
+ *   paste-ready for `className=""`.
+ * - JSX view: untouched skeletal snippet from the prior cut.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 import { IconButton, Section, Segmented } from '@/shared/ui-v2';
 import { readPx } from '../hooks/useComputedStyle';
+import { lookupClassRule } from '@/shared/utils/lookupClassRule';
 
 interface Props {
   target: HTMLElement;
@@ -14,80 +24,69 @@ interface Props {
 
 type Lang = 'css' | 'tailwind' | 'jsx';
 
-function readBg(target: HTMLElement): string {
-  const inline = target.style.backgroundColor;
-  if (inline) return inline;
-  try {
-    return getComputedStyle(target).backgroundColor || 'transparent';
-  } catch {
-    return 'transparent';
-  }
-}
-
-function readOpacity(target: HTMLElement): string {
-  const inline = target.style.opacity;
-  if (inline) return inline;
-  try {
-    return getComputedStyle(target).opacity || '1';
-  } catch {
-    return '1';
-  }
-}
-
 interface Line {
   __html: string;
 }
 
-function cssLines(target: HTMLElement): Line[] {
-  const w = readPx(target, 'width') || '?';
-  const h = readPx(target, 'height') || '?';
-  const padT = readPx(target, 'padding-top') || '0';
-  const padR = readPx(target, 'padding-right') || '0';
-  const padB = readPx(target, 'padding-bottom') || '0';
-  const padL = readPx(target, 'padding-left') || '0';
-  const radius = readPx(target, 'border-radius') || '0';
-  const bg = readBg(target);
-  const opacity = readOpacity(target);
-  return [
-    {
-      __html: `<span class="dv-tok-prop">width</span>: <span class="dv-tok-num">${w}px</span>;`,
-    },
-    {
-      __html: `<span class="dv-tok-prop">height</span>: <span class="dv-tok-num">${h}px</span>;`,
-    },
-    {
-      __html: `<span class="dv-tok-prop">padding</span>: <span class="dv-tok-num">${padT}px ${padR}px ${padB}px ${padL}px</span>;`,
-    },
-    {
-      __html: `<span class="dv-tok-prop">border-radius</span>: <span class="dv-tok-num">${radius}px</span>;`,
-    },
-    {
-      __html: `<span class="dv-tok-prop">background</span>: <span class="dv-tok-val">${bg}</span>;`,
-    },
-    {
-      __html: `<span class="dv-tok-prop">opacity</span>: <span class="dv-tok-num">${opacity}</span>;`,
-    },
-  ];
+interface TwItem {
+  className: string;
+  css: string | null;
+  source: 'class' | 'inline';
 }
 
-function tailwindLines(target: HTMLElement): Line[] {
-  const w = readPx(target, 'width') || '0';
-  const h = readPx(target, 'height') || '0';
-  const padX = readPx(target, 'padding-left') || '0';
-  const padY = readPx(target, 'padding-top') || '0';
-  const radius = readPx(target, 'border-radius') || '0';
-  const bg = readBg(target);
-  return [
-    {
-      __html: `<span class="dv-tok-val">w-[${w}px] h-[${h}px]</span>`,
-    },
-    {
-      __html: `<span class="dv-tok-val">px-[${padX}px] py-[${padY}px] rounded-[${radius}px]</span>`,
-    },
-    {
-      __html: `<span class="dv-tok-val">bg-[${bg}]</span>`,
-    },
-  ];
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function cssLines(target: HTMLElement): Line[] {
+  const className = target.getAttribute('class') ?? '';
+  const styleAttr = target.getAttribute('style') ?? '';
+  const lines: Line[] = [];
+
+  if (className) {
+    lines.push({
+      __html: `<span class="dv-tok-prop">class</span>=<span class="dv-tok-val">"${escapeHtml(className)}"</span>`,
+    });
+  }
+
+  if (styleAttr) {
+    for (const decl of styleAttr.split(';')) {
+      const trimmed = decl.trim();
+      if (!trimmed) continue;
+      const colon = trimmed.indexOf(':');
+      if (colon < 0) continue;
+      const prop = trimmed.slice(0, colon).trim();
+      const value = trimmed.slice(colon + 1).trim();
+      lines.push({
+        __html: `<span class="dv-tok-prop">${escapeHtml(prop)}</span>: <span class="dv-tok-val">${escapeHtml(value)}</span>;`,
+      });
+    }
+  }
+
+  if (lines.length === 0) {
+    lines.push({
+      __html: `<span class="dv-tok-muted">(no class or inline style on this element)</span>`,
+    });
+  }
+
+  return lines;
+}
+
+function twItems(target: HTMLElement): TwItem[] {
+  const items: TwItem[] = [];
+  const classes = (target.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
+  for (const cls of classes) {
+    items.push({ className: cls, css: lookupClassRule(cls), source: 'class' });
+  }
+  const styleAttr = (target.getAttribute('style') ?? '').trim();
+  if (styleAttr) {
+    items.push({ className: '(inline)', css: styleAttr, source: 'inline' });
+  }
+  return items;
 }
 
 function jsxLines(target: HTMLElement): Line[] {
@@ -128,7 +127,9 @@ function linesToText(lines: Line[]): string {
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>'),
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&'),
     )
     .join('\n');
 }
@@ -141,10 +142,26 @@ const LANG_ITEMS: ReadonlyArray<{ value: Lang; label: string }> = [
 
 export const CodeBlock = observer(({ target }: Props) => {
   const [lang, setLang] = React.useState<Lang>('css');
-  // Re-read on every render — computed style follows live mutations from
-  // other panels. Memoization is more harmful than helpful here.
-  const lines =
-    lang === 'css' ? cssLines(target) : lang === 'tailwind' ? tailwindLines(target) : jsxLines(target);
+
+  // Re-read on every render — host stylesheet rules + inline style can
+  // change between renders (other panels write inline styles). Memoizing
+  // here would make the view drift behind ChangeLog.
+  const cssView = lang === 'css' ? cssLines(target) : null;
+  const tw = lang === 'tailwind' ? twItems(target) : null;
+  const jsxView = lang === 'jsx' ? jsxLines(target) : null;
+
+  const handleCopy = (): void => {
+    if (lang === 'tailwind' && tw) {
+      const joined = tw
+        .filter((i) => i.source === 'class')
+        .map((i) => i.className)
+        .join(' ');
+      void copyText(joined);
+      return;
+    }
+    const lines = cssView ?? jsxView ?? [];
+    void copyText(linesToText(lines));
+  };
 
   return (
     <Section
@@ -161,20 +178,40 @@ export const CodeBlock = observer(({ target }: Props) => {
           <IconButton
             icon="copy"
             title="Copy"
-            onClick={() => void copyText(linesToText(lines))}
+            onClick={handleCopy}
             data-testid="paperx-v2-code-copy"
           />
         </>
       }
     >
-      <div className="dv-code-block">
-        {lines.map((l, i) => (
-          <div key={i} className="dv-code-line">
-            <span className="dv-code-num">{i + 1}</span>
-            <span dangerouslySetInnerHTML={l} />
-          </div>
-        ))}
-      </div>
+      {tw ? (
+        <div className="dv-code-block" data-testid="paperx-v2-code-tw-list">
+          {tw.map((it, i) => (
+            <div
+              key={`${it.className}-${i}`}
+              className="dv-code-tw-item"
+              data-source={it.source}
+            >
+              <div className="dv-code-tw-name">{it.className}</div>
+              <div className="dv-code-tw-css">{it.css ?? '— no rule —'}</div>
+            </div>
+          ))}
+          {tw.length === 0 && (
+            <div className="dv-code-line">
+              <span className="dv-tok-muted">(no class or inline style on this element)</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="dv-code-block">
+          {(cssView ?? jsxView ?? []).map((l, i) => (
+            <div key={i} className="dv-code-line">
+              <span className="dv-code-num">{i + 1}</span>
+              <span dangerouslySetInnerHTML={l} />
+            </div>
+          ))}
+        </div>
+      )}
     </Section>
   );
 });

@@ -668,6 +668,31 @@
 .dv-tok-keyword {
   color: #ff6b9d;
 }
+.dv-tok-muted {
+  color: var(--dv-text-muted);
+  font-style: italic;
+}
+.dv-code-tw-item {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.dv-code-tw-item:last-child {
+  border-bottom: none;
+}
+.dv-code-tw-name {
+  color: var(--dv-text);
+  word-break: break-all;
+}
+.dv-code-tw-css {
+  color: var(--dv-text-muted);
+  padding-left: 12px;
+  word-break: break-all;
+  white-space: normal;
+}
+.dv-code-tw-item[data-source='inline'] .dv-code-tw-name {
+  color: var(--dv-text-muted);
+  font-style: italic;
+}
 
 /* ============ SCROLLBAR ============ */
 .dv-scroll {
