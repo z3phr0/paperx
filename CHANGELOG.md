@@ -1,3 +1,9 @@
+## [0.11.9](https://github.com/z3phr0/paperx/compare/v0.11.8...v0.11.9) (2026-05-14)
+
+
+### Bug Fixes
+
+* **changelog:** default-collapsed drawer with persistently active toolbar pin ([3661e3a](https://github.com/z3phr0/paperx/commit/3661e3a505f91ba2a520e1a9fe68f8a4029681ae))
 ## [0.11.8](https://github.com/z3phr0/paperx/compare/v0.11.7...v0.11.8) (2026-05-14)
 
 
