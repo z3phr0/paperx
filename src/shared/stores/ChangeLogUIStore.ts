@@ -43,7 +43,7 @@ export const CHANGE_LOG_RENDER_CAP = 200;
 
 @injectable()
 export class ChangeLogUIStore {
-  drawerOpen = true;
+  drawerOpen = false;
   filters: ChangeLogUIFilters = {};
   pinnedRecordId: string | null = null;
 

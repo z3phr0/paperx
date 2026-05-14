@@ -52,7 +52,7 @@ export const ChangeLogFilters = observer(({ uiStore }: ChangeLogFiltersProps) =>
   }, [uiStore]);
 
   return (
-    <div className="flex items-center gap-2 border-b px-3 py-1.5">
+    <div className="flex items-center gap-2 border-b border-white/10 px-3 py-1.5">
       <div className="flex w-32 shrink-0 flex-col gap-0.5">
         <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
           Mode

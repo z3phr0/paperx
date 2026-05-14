@@ -185,11 +185,14 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
         );
       })}
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      {/* S2-A: change-log drawer toggle. Button shows an indicator dot
-          when there is at least one recorded change so the user is
-          nudged toward export even if the drawer is collapsed. */}
+      {/* S2-A: change-log drawer toggle. v0.11.9: the button is always
+          rendered as the active variant so it reads as "ChangeLog is
+          available here", independent of whether the drawer body is
+          currently expanded. The drawer's own header chevron carries
+          the open/closed signal. `aria-pressed` still tracks `drawerOpen`
+          so a11y + e2e can introspect the live state. */}
       <Button
-        variant={drawerOpen ? 'default' : 'ghost'}
+        variant="default"
         size="icon"
         aria-pressed={drawerOpen}
         aria-label="Toggle change log"

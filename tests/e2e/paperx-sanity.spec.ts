@@ -461,7 +461,8 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
         )
         .toMatchObject({ w: /\d+px/, h: /\d+px/ });
 
-      // ChangeLog drawer is default-open (v0.11.8) — just read the rows.
+      // ChangeLog drawer is default-collapsed (v0.11.9) — open it first.
+      await page.locator('[data-testid="paperx-history"]').click();
       const rows = page.locator('paperx-root [role="row"]');
       await expect(rows.first()).toBeVisible({ timeout: 5_000 });
       const rowsText = await rows.allInnerTexts();
@@ -641,7 +642,8 @@ test.describe('paperx Sprint 3 (F + G)', () => {
         )
         .toMatch(/^cubic-bezier\(/);
 
-      // ChangeLog drawer is default-open (v0.11.8) — just read the rows.
+      // ChangeLog drawer is default-collapsed (v0.11.9) — open it first.
+      await page.locator('[data-testid="paperx-history"]').click();
       const rows = page.locator('paperx-root [role="row"]');
       await expect(rows.first()).toBeVisible({ timeout: 5_000 });
       const rowsText = await rows.allInnerTexts();
@@ -790,7 +792,8 @@ test.describe('paperx Sprint 3 (F + G)', () => {
         )
         .toMatch(/^cubic-bezier\(/);
 
-      // Export prompt and parse clipboard JSON. Drawer is default-open (v0.11.8).
+      // Open ChangeLog drawer, export prompt, parse clipboard JSON.
+      await page.locator('[data-testid="paperx-history"]').click();
       const exportBtn = page.locator('[data-testid="paperx-export-prompt"]');
       await expect(exportBtn).toBeEnabled();
       await exportBtn.click();
