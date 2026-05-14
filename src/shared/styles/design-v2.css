@@ -627,7 +627,10 @@
   font-size: 11.5px;
   line-height: 1.7;
   color: var(--dv-text);
-  overflow-x: auto;
+  /* v0.11.5: word-break: break-all (on .dv-code-decl) handles wrap, so
+     horizontal scroll never engages — hide overflow outright instead of
+     leaving an auto scrollbar that could pop on edge cases. */
+  overflow-x: hidden;
   position: relative;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -711,20 +714,13 @@
      future Chromium drops the value. */
   overflow-y: auto;
   overflow-y: overlay;
+  /* Visual scrollbar removed in v0.11.5 — keep scroll behavior, hide
+     the bar so the macOS-glass inspector stays clean. */
+  scrollbar-width: none;
 }
 .dv-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-.dv-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.dv-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  transition: background var(--dv-t);
-}
-.dv-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.32);
+  width: 0;
+  height: 0;
 }
 
 /* ============ UTILITY LAYOUT ============ */

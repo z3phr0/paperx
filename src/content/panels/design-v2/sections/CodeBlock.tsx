@@ -117,7 +117,7 @@ async function copyText(text: string): Promise<void> {
 
 const LANG_ITEMS: ReadonlyArray<{ value: Lang; label: string }> = [
   { value: 'css', label: 'CSS' },
-  { value: 'tailwind', label: 'TW' },
+  { value: 'tailwind', label: 'Tailwind' },
 ];
 
 export const CodeBlock = observer(({ target }: Props) => {
