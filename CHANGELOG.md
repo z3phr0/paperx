@@ -1,3 +1,11 @@
+# [0.12.0](https://github.com/z3phr0/paperx/compare/v0.11.10...v0.12.0) (2026-05-14)
+
+
+### Features
+
+* **design-v2/text:** Formatting popup with case / wrap / truncation ([607dd28](https://github.com/z3phr0/paperx/commit/607dd28eda7f9030c9c21c9cee5960cab742b77d)), closes [#paperx-portal-layer](https://github.com/z3phr0/paperx/issues/paperx-portal-layer)
+* **design-v2/text:** Text section with font + size + alignment fields ([326e874](https://github.com/z3phr0/paperx/commit/326e8742ab91e096547cd7580d88a8d380612bf1))
+* **design-v2:** mount TextSection + Formatting popup anchor ([cdd4340](https://github.com/z3phr0/paperx/commit/cdd4340baf368f27f05cae948cafd856126ef696))
 ## [0.11.10](https://github.com/z3phr0/paperx/compare/v0.11.9...v0.11.10) (2026-05-14)
 
 
