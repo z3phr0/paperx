@@ -7,13 +7,13 @@
  * collapsed state lives in ChangeLogUIStore.drawerOpen.
  *
  * Layout strategy:
- *   - left/right margin 16 px, bottom 16 px
+ *   - left/right margin 16 px, bottom 16 px (full viewport width minus
+ *     the gutter — v0.11.8 stopped letting side panels push the drawer
+ *     into a half-width strip)
  *   - height: 280 px when expanded, 40 px when collapsed (header only)
  *   - z-index 2147483645: just below DesignPanel (2147483646) and the
- *     toolbar pill (max int32). When DesignPanel is visible AND
- *     overlapping geometrically (right side, full height), we shrink
- *     the drawer's right margin so the two surfaces don't fight for the
- *     same pixels.
+ *     toolbar pill (max int32). DesignPanel overlaps the drawer's right
+ *     edge by design; it sits on top so both surfaces can coexist.
  *   - the drawer itself stops mouse + keyboard events bubbling, so the
  *     ElementPicker capture-phase listener doesn't hijack input events.
  */
@@ -32,14 +32,6 @@ import { ChangeLogRow } from './ChangeLogRow';
 
 const COLLAPSED_HEIGHT = 40;
 const EXPANDED_HEIGHT = 280;
-const SIDE_PANEL_WIDTH = 400;
-const PANEL_GUTTER = 8;
-const SIDE_PANEL_MODES: ReadonlySet<string> = new Set([
-  'design',
-  'ruler',
-  'comment',
-  'transition',
-]);
 
 export interface ChangeLogDrawerProps {
   uiStore: UIStore;
@@ -52,7 +44,6 @@ export interface ChangeLogDrawerProps {
 export const ChangeLogDrawer = observer(
   ({
     uiStore,
-    selectionStore,
     changeLogUIStore,
     exporter,
     styleEdit,
@@ -64,18 +55,10 @@ export const ChangeLogDrawer = observer(
     const isOpen = changeLogUIStore.drawerOpen;
     const records = changeLogUIStore.filteredRecords;
 
-    const sidePanelVisible =
-      uiStore.mode != null &&
-      SIDE_PANEL_MODES.has(uiStore.mode) &&
-      selectionStore.selected != null;
-    const rightOffset = sidePanelVisible
-      ? 16 + SIDE_PANEL_WIDTH + PANEL_GUTTER
-      : 16;
-
     const containerStyle: React.CSSProperties = {
       position: 'fixed',
       left: 16,
-      right: rightOffset,
+      right: 16,
       bottom: 16,
       height: isOpen ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
       zIndex: 2147483645,
