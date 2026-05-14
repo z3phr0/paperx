@@ -1,17 +1,22 @@
 /**
  * Fill section — Solid / Gradient / Image tabbed editor.
  *
- * One-period scope (see plan): Solid commits via StyleEditService;
- * Gradient + Image render the design-spec UI only (no write path yet).
- * The UI shells preserve visual fidelity so later sprints can attach
- * the writer without re-doing the visual.
+ * v0.11.0 scope: Solid commits `background-color` via StyleEditService
+ * through `useFillEditor`. Gradient + Image render visual shells only —
+ * no write path attached this period; the shells preserve fidelity so
+ * later sprints can attach the writer without re-doing the visual.
+ *
+ * Section starts collapsed when no fill exists; `+` materialises a
+ * single fill entry whose color is then edited via the shared v2
+ * ColorPicker — same component the Border section uses.
  */
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
-import { IconButton, Section, Segmented, Swatch } from '@/shared/ui-v2';
-import { cssColorToHex8 } from '@/shared/design-logic/border';
+import { IconButton, Section, Segmented } from '@/shared/ui-v2';
+import { ColorPicker } from '@/shared/ui/ColorPicker';
+import { useFillEditor } from '@/shared/design-logic/fill';
 
 interface Props {
   target: HTMLElement;
@@ -25,73 +30,6 @@ const TAB_ITEMS: ReadonlyArray<{ value: FillTab; label: string }> = [
   { value: 'gradient', label: 'Gradient' },
   { value: 'image', label: 'Image' },
 ];
-
-function readBackgroundHex8(target: HTMLElement): string {
-  const inline = target.style.backgroundColor;
-  if (inline) return cssColorToHex8(inline);
-  try {
-    const computed = getComputedStyle(target).backgroundColor;
-    if (computed) return cssColorToHex8(computed);
-  } catch {
-    // ignore — fall through
-  }
-  return '#ffffffff';
-}
-
-function hex8ToRgba(hex: string): string {
-  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!m) return hex;
-  const r = parseInt(m[1]!, 16);
-  const g = parseInt(m[2]!, 16);
-  const b = parseInt(m[3]!, 16);
-  const a = parseInt(m[4]!, 16) / 255;
-  return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
-}
-
-/**
- * Solid color editor — single row with swatch, hex display, alpha %.
- * Clicking the row opens the legacy ColorPicker (deferred wiring; for
- * now the row is informational and the swatch is the primary affordance).
- */
-const SolidRow: React.FC<{ hex8: string }> = ({ hex8 }) => {
-  const alpha = parseInt(hex8.slice(7, 9) || 'ff', 16) / 255;
-  const rgbHex = hex8.slice(1, 7).toUpperCase();
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '0 8px',
-        background: 'var(--dv-bg-input)',
-        borderRadius: 'var(--dv-r-input)',
-        height: 'var(--dv-row-h)',
-      }}
-      data-testid="paperx-v2-fill-solid-row"
-    >
-      <Swatch color={`#${rgbHex}`} alpha={alpha} />
-      <span
-        style={{
-          fontSize: 'var(--dv-value-size)',
-          fontVariantNumeric: 'tabular-nums',
-          letterSpacing: '0.02em',
-        }}
-      >
-        {rgbHex}
-      </span>
-      <span style={{ fontSize: 'var(--dv-value-size)', color: 'var(--dv-text-muted)' }}>/</span>
-      <span
-        style={{
-          fontSize: 'var(--dv-value-size)',
-          fontVariantNumeric: 'tabular-nums',
-          flex: 1,
-        }}
-      >
-        {Math.round(alpha * 100)}%
-      </span>
-    </div>
-  );
-};
 
 /**
  * Gradient editor visual shell. The actual gradient bar + stops list +
@@ -193,11 +131,6 @@ const GradientShell: React.FC = () => {
         <IconButton icon="rotate" title="Reverse" />
         <IconButton icon="plus" title="Add stop" />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {stops.map((s, i) => (
-          <SolidRow key={i} hex8={`${s.color}ff`.toLowerCase()} />
-        ))}
-      </div>
     </>
   );
 };
@@ -251,49 +184,72 @@ const ImageShell: React.FC = () => (
 
 export const FillSection = observer(({ target, styleEdit }: Props) => {
   const [tab, setTab] = React.useState<FillTab>('solid');
-  const [visible, setVisible] = React.useState(true);
-  const [hex8, setHex8] = React.useState(() => readBackgroundHex8(target));
+  const {
+    entries,
+    canAdd,
+    handleAdd,
+    handleChangeColor,
+    handlePreviewColor,
+    handleToggleVisible,
+    handleRemove,
+  } = useFillEditor({ target, styleEdit });
 
-  React.useEffect(() => {
-    setHex8(readBackgroundHex8(target));
-    setVisible(true);
-  }, [target]);
-
-  const onToggleVisible = () => {
-    const next = !visible;
-    setVisible(next);
-    if (!next) {
-      styleEdit.apply(target, 'background-color', 'transparent');
-    } else {
-      styleEdit.apply(target, 'background-color', hex8ToRgba(hex8));
-    }
-  };
+  const entry = entries[0];
 
   return (
     <Section
       title="Fill"
       data-testid="paperx-v2-fill"
-      actions={<IconButton icon="plus" title="Add fill" />}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-        <Segmented
-          full
-          value={tab}
-          onChange={setTab}
-          items={TAB_ITEMS}
-          data-testid="paperx-v2-fill-tabs"
-        />
+      collapsed={entries.length === 0}
+      actions={
         <IconButton
-          icon={visible ? 'eye' : 'eye-off'}
-          onClick={onToggleVisible}
-          data-testid="paperx-v2-fill-visibility"
+          icon="plus"
+          title="Add fill"
+          onClick={handleAdd}
+          disabled={!canAdd}
+          data-testid="paperx-v2-fill-add"
         />
-        <IconButton icon="minus" />
-      </div>
-
-      {tab === 'solid' && <SolidRow hex8={hex8} />}
-      {tab === 'gradient' && <GradientShell />}
-      {tab === 'image' && <ImageShell />}
+      }
+    >
+      {entry && (
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+          data-testid={`paperx-v2-fill-row-${entry.id}`}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Segmented
+              full
+              value={tab}
+              onChange={setTab}
+              items={TAB_ITEMS}
+              data-testid="paperx-v2-fill-tabs"
+            />
+            <IconButton
+              icon={entry.visible ? 'eye' : 'eye-off'}
+              onClick={() => handleToggleVisible(entry.id)}
+              data-testid="paperx-v2-fill-visibility"
+              title={entry.visible ? 'Hide' : 'Show'}
+            />
+            <IconButton
+              icon="minus"
+              onClick={() => handleRemove(entry.id)}
+              data-testid="paperx-v2-fill-remove"
+              title="Remove fill"
+            />
+          </div>
+          {tab === 'solid' && (
+            <ColorPicker
+              value={entry.color}
+              onChange={(c) => handleChangeColor(entry.id, c)}
+              onPreview={(c) => handlePreviewColor(entry.id, c)}
+              triggerVariant="v2"
+              ariaLabel="Fill color"
+            />
+          )}
+          {tab === 'gradient' && <GradientShell />}
+          {tab === 'image' && <ImageShell />}
+        </div>
+      )}
     </Section>
   );
 });
