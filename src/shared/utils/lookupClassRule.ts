@@ -43,3 +43,42 @@ export function lookupClassRule(className: string): string | null {
   }
   return decls.length ? decls.join(' ') : null;
 }
+
+/**
+ * Variant of `lookupClassRule` that returns the deduplicated property
+ * names declared by `.<className>` rules across all readable host
+ * stylesheets, in document/cascade order. Returns null when no rule
+ * matches the class.
+ *
+ * Callers resolve the actual values via `getComputedStyle(target)` so
+ * cascade overrides (later class wins, inline wins over class, etc.)
+ * are reflected in the displayed value without re-implementing the
+ * cascade here.
+ */
+export function lookupClassRuleProps(className: string): string[] | null {
+  if (!className) return null;
+  let selector: string;
+  try {
+    selector = `.${CSS.escape(className)}`;
+  } catch {
+    return null;
+  }
+  const props = new Set<string>();
+  for (const sheet of Array.from(document.styleSheets)) {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    }
+    for (const rule of Array.from(rules)) {
+      if (!(rule instanceof CSSStyleRule)) continue;
+      if (rule.selectorText !== selector) continue;
+      for (let i = 0; i < rule.style.length; i++) {
+        const p = rule.style.item(i);
+        if (p) props.add(p);
+      }
+    }
+  }
+  return props.size > 0 ? Array.from(props) : null;
+}

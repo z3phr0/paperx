@@ -672,6 +672,15 @@
   color: var(--dv-text-muted);
   font-style: italic;
 }
+.dv-tok-punct {
+  color: var(--dv-text-muted);
+}
+.dv-code-decl {
+  display: block;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.6;
+}
 .dv-code-tw-item {
   padding: 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -684,10 +693,8 @@
   word-break: break-all;
 }
 .dv-code-tw-css {
-  color: var(--dv-text-muted);
+  color: var(--dv-text);
   padding-left: 12px;
-  word-break: break-all;
-  white-space: normal;
 }
 .dv-code-tw-item[data-source='inline'] .dv-code-tw-name {
   color: var(--dv-text-muted);
