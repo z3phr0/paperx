@@ -1,3 +1,9 @@
+## [0.11.7](https://github.com/z3phr0/paperx/compare/v0.11.6...v0.11.7) (2026-05-14)
+
+
+### Bug Fixes
+
+* **changelog:** two-step confirm on Reset + lock Export button width ([185d559](https://github.com/z3phr0/paperx/commit/185d5593b902ddd2a1a4f96efe1b4403952481a0))
 ## [0.11.6](https://github.com/z3phr0/paperx/compare/v0.11.5...v0.11.6) (2026-05-14)
 ## [0.11.5](https://github.com/z3phr0/paperx/compare/v0.11.4...v0.11.5) (2026-05-14)
 ## [0.11.4](https://github.com/z3phr0/paperx/compare/v0.11.3...v0.11.4) (2026-05-14)
