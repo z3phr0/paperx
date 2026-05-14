@@ -221,31 +221,23 @@ export const TextFormattingPopup = observer(
       setMaxLines(readMaxLines(target));
     }, [target]);
 
-    // ── click-outside + Escape dismissal ──
+    // ── Escape-to-dismiss ──
+    // Click-outside dismissal was REMOVED in v0.12.2. The previous
+    // capture-phase mousedown handler intercepted clicks on the Wrap
+    // dropdown's menu items (they portal into #paperx-portal-layer as
+    // a SIBLING of this popup, not a descendant — so composedPath
+    // never includes rootRef and the handler misread them as outside
+    // clicks, unmounting the popup before Radix's onClick could fire).
+    // The popup is now persistent; explicit close paths are: the X
+    // button, the Escape key, the Text section's sliders toggle, and
+    // the auto-close on selection / mode / sub-tab change owned by
+    // DesignPanelV2.
     React.useEffect(() => {
-      const onMouseDown = (e: MouseEvent): void => {
-        const path = e.composedPath();
-        if (rootRef.current && path.includes(rootRef.current)) return;
-        // Ignore the toggle button — its onClick handles its own toggle.
-        for (const node of path) {
-          if (
-            node instanceof HTMLElement &&
-            node.getAttribute('data-testid') === 'paperx-v2-text-fmt-toggle'
-          ) {
-            return;
-          }
-        }
-        onClose();
-      };
       const onKey = (e: KeyboardEvent): void => {
         if (e.key === 'Escape') onClose();
       };
-      document.addEventListener('mousedown', onMouseDown, true);
       document.addEventListener('keydown', onKey, true);
-      return () => {
-        document.removeEventListener('mousedown', onMouseDown, true);
-        document.removeEventListener('keydown', onKey, true);
-      };
+      return () => document.removeEventListener('keydown', onKey, true);
     }, [onClose]);
 
     // ── commit writers ──
