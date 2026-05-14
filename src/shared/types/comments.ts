@@ -18,6 +18,25 @@ export function nextPriority(p: CommentPriority): CommentPriority {
   return 'P0';
 }
 
+/** Priority palette shared by composer pills, list chips, and the
+ *  Comment annotation overlay. Source-of-truth for priority color so
+ *  the panel and DOM chrome stay locked together. Values lifted from
+ *  the v0.13.0 design handoff (paperx-app.jsx COMMENT_PRI_MAP). */
+export interface PriorityPalette {
+  /** Foreground / text accent. */
+  fg: string;
+  /** Translucent fill for pills + chrome halos. */
+  soft: string;
+  /** Solid dot / pin / chrome border. */
+  dot: string;
+}
+
+export const COMMENT_PRI_MAP: Record<CommentPriority, PriorityPalette> = {
+  P0: { fg: '#EF4444', soft: 'rgba(239, 68, 68, 0.12)', dot: '#EF4444' },
+  P1: { fg: '#D97706', soft: 'rgba(217, 119, 6, 0.14)', dot: '#F59E0B' },
+  P2: { fg: '#0284C7', soft: 'rgba(2, 132, 199, 0.12)', dot: '#38BDF8' },
+};
+
 export interface CommentBbox {
   x: number;
   y: number;
@@ -52,6 +71,12 @@ export interface PaperxComment {
   priority: CommentPriority;
   /** ms-since-epoch timestamp. */
   ts: number;
+  /**
+   * v0.13.0+ — Whether the comment has been resolved by the reviewer.
+   * Optional for forward / backward compat: v0.12.x exports omit the
+   * field, and importers default it to false.
+   */
+  resolved?: boolean;
 }
 
 export interface PaperxCommentsV1 {
