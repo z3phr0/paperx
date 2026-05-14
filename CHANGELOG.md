@@ -1,3 +1,9 @@
+## [0.13.1](https://github.com/z3phr0/paperx/compare/v0.13.0...v0.13.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* **comments:** capture parent + priority frame; contain thumbnail ([b2095da](https://github.com/z3phr0/paperx/commit/b2095dabe66f439723cc61c3c51583eb902d386b))
 # [0.13.0](https://github.com/z3phr0/paperx/compare/v0.12.3...v0.13.0) (2026-05-14)
 
 
