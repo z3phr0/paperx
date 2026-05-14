@@ -1,3 +1,9 @@
+## [0.12.1](https://github.com/z3phr0/paperx/compare/v0.12.0...v0.12.1) (2026-05-14)
+
+
+### Features
+
+* **design-v2/text:** Case Segmented supports toggle-off on re-click ([5470305](https://github.com/z3phr0/paperx/commit/5470305943dd7c6df04490dce237c50d08bb0be4))
 # [0.12.0](https://github.com/z3phr0/paperx/compare/v0.11.10...v0.12.0) (2026-05-14)
 
 
