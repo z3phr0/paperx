@@ -256,6 +256,18 @@ export const TextFormattingPopup = observer(
 
     const commitCase = (v: Case4): void => {
       if (v === '') return; // Segmented never emits '' on its own
+      // Toggle-off: clicking the currently active item clears the
+      // case — the user wanted an escape hatch back to "no special
+      // case" without a separate "None" segment.
+      if (textCase === v) {
+        setTextCase('');
+        if (v === 'italic') {
+          styleEdit.apply(target, 'font-style', 'normal');
+        } else {
+          styleEdit.apply(target, 'text-transform', 'none');
+        }
+        return;
+      }
       setTextCase(v);
       if (v === 'italic') {
         styleEdit.apply(target, 'font-style', 'italic');
