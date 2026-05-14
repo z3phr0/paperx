@@ -352,7 +352,6 @@ export function ColorPicker({
             />
             <span
               style={{
-                flex: 1,
                 fontSize: 'var(--dv-value-size)',
                 fontVariantNumeric: 'tabular-nums',
                 letterSpacing: '0.02em',
@@ -387,6 +386,7 @@ export function ColorPicker({
                 </span>
               </>
             )}
+            <span aria-hidden style={{ flex: 1 }} />
           </button>
         ) : (
           <button
