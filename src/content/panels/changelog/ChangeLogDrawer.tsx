@@ -51,6 +51,9 @@ export const ChangeLogDrawer = observer(
     const [filtersVisible, setFiltersVisible] = React.useState(false);
 
     if (!uiStore.visible) return null;
+    // v0.11.10: toolbar History button toggles panel-level visibility.
+    // When hidden, the drawer is unmounted entirely (not just collapsed).
+    if (!changeLogUIStore.drawerVisible) return null;
 
     const isOpen = changeLogUIStore.drawerOpen;
     const records = changeLogUIStore.filteredRecords;

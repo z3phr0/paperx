@@ -461,8 +461,10 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
         )
         .toMatchObject({ w: /\d+px/, h: /\d+px/ });
 
-      // ChangeLog drawer is default-collapsed (v0.11.9) — open it first.
-      await page.locator('[data-testid="paperx-history"]').click();
+      // ChangeLog drawer body is default-collapsed (v0.11.10) — click the
+      // drawer's own chevron to expand it. The toolbar History button
+      // toggles panel visibility, not body collapse.
+      await page.locator('[data-testid="paperx-changelog-collapse"]').click();
       const rows = page.locator('paperx-root [role="row"]');
       await expect(rows.first()).toBeVisible({ timeout: 5_000 });
       const rowsText = await rows.allInnerTexts();
@@ -642,8 +644,8 @@ test.describe('paperx Sprint 3 (F + G)', () => {
         )
         .toMatch(/^cubic-bezier\(/);
 
-      // ChangeLog drawer is default-collapsed (v0.11.9) — open it first.
-      await page.locator('[data-testid="paperx-history"]').click();
+      // ChangeLog drawer body is default-collapsed (v0.11.10) — expand it.
+      await page.locator('[data-testid="paperx-changelog-collapse"]').click();
       const rows = page.locator('paperx-root [role="row"]');
       await expect(rows.first()).toBeVisible({ timeout: 5_000 });
       const rowsText = await rows.allInnerTexts();
@@ -792,8 +794,10 @@ test.describe('paperx Sprint 3 (F + G)', () => {
         )
         .toMatch(/^cubic-bezier\(/);
 
-      // Open ChangeLog drawer, export prompt, parse clipboard JSON.
-      await page.locator('[data-testid="paperx-history"]').click();
+      // Expand ChangeLog body so Export Prompt becomes reachable, then
+      // copy + parse clipboard JSON. (Toolbar History toggles panel
+      // visibility — distinct from this body collapse since v0.11.10.)
+      await page.locator('[data-testid="paperx-changelog-collapse"]').click();
       const exportBtn = page.locator('[data-testid="paperx-export-prompt"]');
       await expect(exportBtn).toBeEnabled();
       await exportBtn.click();

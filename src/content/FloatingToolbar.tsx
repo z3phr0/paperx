@@ -80,7 +80,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
 
   if (!store.visible) return null;
   const recordCount = changeLogUIStore.totalCount;
-  const drawerOpen = changeLogUIStore.drawerOpen;
+  const drawerVisible = changeLogUIStore.drawerVisible;
 
   const onGripPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
     if (!pillRef.current) return;
@@ -185,20 +185,17 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
         );
       })}
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      {/* S2-A: change-log drawer toggle. v0.11.9: the button is always
-          rendered as the active variant so it reads as "ChangeLog is
-          available here", independent of whether the drawer body is
-          currently expanded. The drawer's own header chevron carries
-          the open/closed signal. `aria-pressed` still tracks `drawerOpen`
-          so a11y + e2e can introspect the live state. */}
+      {/* v0.11.10: button shows / hides the ChangeLog panel entirely
+          (drawer rendered to viewport vs unmounted). The drawer's own
+          chevron handles body collapse independently. */}
       <Button
-        variant="default"
+        variant={drawerVisible ? 'default' : 'ghost'}
         size="icon"
-        aria-pressed={drawerOpen}
-        aria-label="Toggle change log"
+        aria-pressed={drawerVisible}
+        aria-label="Toggle change log panel"
         title={`Change log (${recordCount})`}
         data-testid="paperx-history"
-        onClick={() => changeLogUIStore.toggleDrawer()}
+        onClick={() => changeLogUIStore.toggleDrawerVisible()}
         className="relative rounded-full"
       >
         <History className="h-4 w-4" />

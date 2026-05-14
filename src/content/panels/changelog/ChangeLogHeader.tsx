@@ -89,6 +89,7 @@ export const ChangeLogHeader = observer(
           onClick={() => uiStore.toggleDrawer()}
           aria-label={drawerOpen ? 'Collapse change log' : 'Expand change log'}
           title={drawerOpen ? 'Collapse' : 'Expand'}
+          data-testid="paperx-changelog-collapse"
           className="h-6 w-6 shrink-0"
         >
           {drawerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}

@@ -43,6 +43,12 @@ export const CHANGE_LOG_RENDER_CAP = 200;
 
 @injectable()
 export class ChangeLogUIStore {
+  /**
+   * Panel-level visibility — drawer rendered to viewport at all?
+   * Toggled by the toolbar History button. Independent of `drawerOpen`,
+   * which controls body expansion within an already-visible drawer.
+   */
+  drawerVisible = true;
   drawerOpen = false;
   filters: ChangeLogUIFilters = {};
   pinnedRecordId: string | null = null;
@@ -51,12 +57,16 @@ export class ChangeLogUIStore {
     @inject(TYPES.ChangeLogService) private readonly log: IChangeLogService,
   ) {
     makeObservable(this, {
+      drawerVisible: observable,
       drawerOpen: observable,
       // `observable` (deep) on filters is fine — it's a flat object of
       // primitives, no DOM refs. We replace it wholesale in setFilters,
       // so reactions on individual fields fire correctly.
       filters: observable,
       pinnedRecordId: observable,
+      toggleDrawerVisible: action,
+      showDrawer: action,
+      hideDrawer: action,
       toggleDrawer: action,
       openDrawer: action,
       closeDrawer: action,
@@ -68,6 +78,18 @@ export class ChangeLogUIStore {
       hasActiveFilter: computed,
       totalCount: computed,
     });
+  }
+
+  toggleDrawerVisible(): void {
+    this.drawerVisible = !this.drawerVisible;
+  }
+
+  showDrawer(): void {
+    this.drawerVisible = true;
+  }
+
+  hideDrawer(): void {
+    this.drawerVisible = false;
   }
 
   toggleDrawer(): void {
