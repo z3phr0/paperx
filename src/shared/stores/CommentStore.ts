@@ -115,6 +115,7 @@ export class CommentStore {
       remove: action,
       reset: action,
       setPriority: action,
+      setResolved: action,
       setThumbnail: action,
       importMany: action,
     });
@@ -168,6 +169,14 @@ export class CommentStore {
     this.comments = next;
   }
 
+  setResolved(id: string, resolved: boolean): void {
+    const idx = this.comments.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const next = [...this.comments];
+    next[idx] = { ...next[idx]!, resolved };
+    this.comments = next;
+  }
+
   setThumbnail(id: string, dataUrl: string | null): void {
     const idx = this.comments.findIndex((c) => c.id === id);
     if (idx < 0) return;
@@ -180,9 +189,12 @@ export class CommentStore {
   importMany(records: PaperxComment[]): number {
     if (!Array.isArray(records) || records.length === 0) return 0;
     // Defensive: drop entries that don't carry the minimum we need.
-    const valid = records.filter(
-      (r) => r != null && typeof r.id === 'string' && typeof r.text === 'string',
-    );
+    // Normalize the v0.13.0 `resolved` field so legacy v0.12.x exports
+    // (which omit it) land as `resolved: false` rather than undefined —
+    // keeps downstream consumers from needing `?? false` everywhere.
+    const valid = records
+      .filter((r) => r != null && typeof r.id === 'string' && typeof r.text === 'string')
+      .map((r) => ({ ...r, resolved: r.resolved ?? false }));
     this.comments = [...this.comments, ...valid];
     return valid.length;
   }
