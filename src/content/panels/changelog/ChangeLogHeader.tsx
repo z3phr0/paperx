@@ -31,10 +31,12 @@ export interface ChangeLogHeaderProps {
 type CopyStatus = 'idle' | 'ok' | 'fail';
 
 const STATUS_RESET_MS = 1500;
+const RESET_CONFIRM_MS = 3000;
 
 export const ChangeLogHeader = observer(
   ({ uiStore, exporter, styleEdit, filtersVisible, onToggleFilters }: ChangeLogHeaderProps) => {
     const [copyStatus, setCopyStatus] = React.useState<CopyStatus>('idle');
+    const [resetArmed, setResetArmed] = React.useState(false);
 
     React.useEffect(() => {
       if (copyStatus === 'idle') return;
@@ -42,9 +44,22 @@ export const ChangeLogHeader = observer(
       return () => window.clearTimeout(id);
     }, [copyStatus]);
 
+    // Auto-revert the armed Reset state after the confirm window expires
+    // so a stray first click can never sit pending forever.
+    React.useEffect(() => {
+      if (!resetArmed) return;
+      const id = window.setTimeout(() => setResetArmed(false), RESET_CONFIRM_MS);
+      return () => window.clearTimeout(id);
+    }, [resetArmed]);
+
     const handleResetAll = React.useCallback(() => {
+      if (!resetArmed) {
+        setResetArmed(true);
+        return;
+      }
+      setResetArmed(false);
       styleEdit.reset();
-    }, [styleEdit]);
+    }, [resetArmed, styleEdit]);
 
     const handleExport = React.useCallback(async () => {
       try {
@@ -98,15 +113,21 @@ export const ChangeLogHeader = observer(
           Filters
         </Button>
         <Button
-          variant="ghost"
+          variant={resetArmed ? 'destructive' : 'ghost'}
           size="sm"
           onClick={handleResetAll}
           disabled={total === 0}
-          title="Revert all changes and clear the log"
+          title={
+            resetArmed
+              ? 'Click again within 3s to revert all and clear the log'
+              : 'Revert all changes and clear the log'
+          }
           className="h-7 px-2"
+          data-testid="paperx-reset-all"
+          data-armed={resetArmed || undefined}
         >
           <Trash2 className="mr-1 h-3 w-3" />
-          Reset
+          {resetArmed ? 'Click again' : 'Reset'}
         </Button>
         <Button
           variant="default"
@@ -115,7 +136,7 @@ export const ChangeLogHeader = observer(
           disabled={total === 0}
           title="Build paperx-prompt-v1 and copy to clipboard"
           data-testid="paperx-export-prompt"
-          className="h-7 px-2"
+          className="h-7 min-w-[120px] px-2"
         >
           {copyStatus === 'ok' ? (
             <Check className="mr-1 h-3 w-3" />
