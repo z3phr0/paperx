@@ -1,3 +1,9 @@
+## [0.11.8](https://github.com/z3phr0/paperx/compare/v0.11.7...v0.11.8) (2026-05-14)
+
+
+### Features
+
+* **changelog:** drawer spans full viewport width and defaults to open ([067ae7a](https://github.com/z3phr0/paperx/commit/067ae7adbf8e4c211dc5127ab1b6c69f2fd83ff1))
 ## [0.11.7](https://github.com/z3phr0/paperx/compare/v0.11.6...v0.11.7) (2026-05-14)
 
 
