@@ -55,7 +55,11 @@ export type IconName =
   | 'ruler'
   | 'message-square'
   | 'clipboard'
-  | 'link';
+  | 'link'
+  | 'reset'
+  | 'download'
+  | 'upload'
+  | 'x';
 
 export interface IconProps {
   name: IconName;
@@ -364,6 +368,36 @@ const PATHS: Record<IconName, React.ReactElement> = {
     <>
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  // Lucide rotate-ccw — used by Comment v2 list item "Reopen" action.
+  reset: (
+    <>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+    </>
+  ),
+  // Lucide download — used by Comment v2 panel "Export JSON" header action.
+  download: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" x2="12" y1="15" y2="3" />
+    </>
+  ),
+  // Lucide upload — used by Comment v2 panel "Import JSON" header action.
+  upload: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" x2="12" y1="3" y2="15" />
+    </>
+  ),
+  // Lucide x — used by Comment v2 composer + delete button.
+  x: (
+    <>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </>
   ),
 };
