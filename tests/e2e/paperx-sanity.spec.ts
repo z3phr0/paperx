@@ -1150,7 +1150,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
     }
   });
 
-  test('Toolbar action reflects active vs paused on the icon (v0.14.2)', async () => {
+  test('Toolbar action reflects active vs paused on the icon (v0.14.3)', async () => {
     const ctx = await launchWithExtension();
     try {
       const fixture = ctx.pages()[0] ?? (await ctx.newPage());
@@ -1170,8 +1170,13 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
       });
       expect(tabId).not.toBeNull();
 
-      // Active, no edits yet → numeric "0" badge on the light-green
-      // chip (#86EFAC = [134,239,172,255]) + "active" title.
+      // v0.14.3: the count moved off the native badge into a
+      // self-composited icon (chrome.action.setIcon) so we can center
+      // the glyph ourselves. The native badge must therefore stay
+      // EMPTY in every state. Pixel-level centering of the composited
+      // glyph is a manual-verify item (headless can't assert the
+      // rasterized icon). Title is the regression guard that the
+      // active/paused state still propagates.
       await expect
         .poll(
           () =>
@@ -1181,15 +1186,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
             ),
           { timeout: 5_000 },
         )
-        .toBe('0');
-      await expect
-        .poll(() =>
-          worker.evaluate(
-            (id) => chrome.action.getBadgeBackgroundColor({ tabId: id! }),
-            tabId,
-          ),
-        )
-        .toEqual([134, 239, 172, 255]);
+        .toBe('');
       await expect
         .poll(() =>
           worker.evaluate(
@@ -1199,7 +1196,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
         )
         .toContain('active');
 
-      // Disable → pause glyph badge on neutral gray + "paused" title.
+      // Disable → still no native badge, title flips to "paused".
       await worker.evaluate(async (id) => {
         const fn = (globalThis as Record<string, unknown>)[
           '__paperxSetTabEnabled'
@@ -1218,15 +1215,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
             ),
           { timeout: 5_000 },
         )
-        .toBe('‖');
-      await expect
-        .poll(() =>
-          worker.evaluate(
-            (id) => chrome.action.getBadgeBackgroundColor({ tabId: id! }),
-            tabId,
-          ),
-        )
-        .toEqual([107, 114, 128, 255]);
+        .toBe('');
       await expect
         .poll(() =>
           worker.evaluate(
