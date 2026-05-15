@@ -1,3 +1,9 @@
+## [0.14.1](https://github.com/z3phr0/paperx/compare/v0.14.0...v0.14.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **background:** surface active vs paused on the toolbar action ([119eca4](https://github.com/z3phr0/paperx/commit/119eca4f65f9f1c951e3a050b3a7f089f662ecff))
 # [0.14.0](https://github.com/z3phr0/paperx/compare/v0.13.2...v0.14.0) (2026-05-15)
 
 
