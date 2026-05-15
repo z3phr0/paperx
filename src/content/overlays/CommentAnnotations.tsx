@@ -61,9 +61,7 @@ const AnnotationChrome: React.FC<{
 }> = ({ rect, priority, active, onPinClick }) => {
   const c = COMMENT_PRI_MAP[priority];
   const borderWidth = active ? 1.75 : 1.25;
-  const shadow = active
-    ? `0 0 0 3px ${c.dot}22, 0 8px 24px ${c.dot}25`
-    : `0 0 0 2px ${c.dot}18`;
+  const shadow = active ? `0 8px 24px ${c.dot}25` : 'none';
   return (
     <>
       {/* Bounding chrome */}
@@ -109,7 +107,7 @@ const AnnotationChrome: React.FC<{
           letterSpacing: '-0.02em',
           fontFamily: 'inherit',
           cursor: 'pointer',
-          boxShadow: `0 4px 12px ${c.dot}66, 0 0 0 2px var(--dv-bg, rgba(28,28,30,0.62))`,
+          boxShadow: `0 4px 12px ${c.dot}66, 0 0 0 2px #fff`,
           pointerEvents: 'auto',
           zIndex: 2147483641,
         }}
