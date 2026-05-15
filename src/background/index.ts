@@ -22,15 +22,47 @@
  *     tab's enabled state directly.
  */
 import {
+  PAPERX_COUNT_CHANGED,
   PAPERX_ENABLED_CHANGED,
   PAPERX_QUERY_ENABLED,
+  PAPERX_REPORT_COUNT,
   PAPERX_SET_ENABLED,
   PAPERX_TOGGLE_ENABLED,
   type PaperxMessage,
 } from '@/shared/types/messages';
+import { countKeyFor } from '@/shared/storage/changeCount';
 
 const SESSION_KEY_PREFIX = 'paperx_tab_';
 const keyFor = (tabId: number): string => `${SESSION_KEY_PREFIX}${tabId}`;
+
+const BADGE_COLOR = '#D09A06';
+
+/**
+ * Cache the tab's ChangeLog count in session (popup reads it direct),
+ * paint the toolbar action badge, and rebroadcast so an open popup
+ * mirrors it live. Every chrome.* call is best-effort — a closed tab
+ * or asleep SW must not throw.
+ */
+async function applyCount(tabId: number, count: number): Promise<void> {
+  try {
+    await chrome.storage.session.set({ [countKeyFor(tabId)]: count });
+  } catch (err) {
+    console.warn('[paperx/bg] count session.set failed', err);
+  }
+  const text = count > 0 ? String(count) : '';
+  chrome.action.setBadgeText({ tabId, text }).catch(() => {});
+  if (count > 0) {
+    chrome.action
+      .setBadgeBackgroundColor({ tabId, color: BADGE_COLOR })
+      .catch(() => {});
+  }
+  chrome.tabs
+    .sendMessage(tabId, {
+      type: PAPERX_COUNT_CHANGED,
+      count,
+    } satisfies PaperxMessage)
+    .catch(() => {});
+}
 
 async function getTabEnabled(tabId: number): Promise<boolean> {
   try {
@@ -56,6 +88,10 @@ async function setTabEnabled(tabId: number, value: boolean): Promise<void> {
       enabled: value,
     } satisfies PaperxMessage)
     .catch(() => {});
+  // Disabling the tab tears the content script down, so its count is
+  // now meaningless — clear the badge + cache immediately rather than
+  // waiting for the (never-arriving) reportCount(0) from a dead frame.
+  if (!value) void applyCount(tabId, 0);
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -64,6 +100,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   void chrome.storage.session.remove(keyFor(tabId)).catch(() => {});
+  void chrome.storage.session.remove(countKeyFor(tabId)).catch(() => {});
 });
 
 chrome.runtime.onMessage.addListener(
@@ -89,6 +126,12 @@ chrome.runtime.onMessage.addListener(
         sendResponse({ enabled: next });
       })();
       return true;
+    }
+    if (msg?.type === PAPERX_REPORT_COUNT) {
+      const tabId = sender.tab?.id;
+      if (tabId != null) void applyCount(tabId, msg.count);
+      // Fire-and-forget — the content script doesn't await a response.
+      return;
     }
   },
 );
