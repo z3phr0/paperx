@@ -1,3 +1,9 @@
+## [0.14.3](https://github.com/z3phr0/paperx/compare/v0.14.2...v0.14.3) (2026-05-15)
+
+
+### Bug Fixes
+
+* **background:** self-composite action icon so the count is truly centered ([b4d3eff](https://github.com/z3phr0/paperx/commit/b4d3effdf66ea07e9b8e2334698e8fe8f9c6736c))
 ## [0.14.2](https://github.com/z3phr0/paperx/compare/v0.14.1...v0.14.2) (2026-05-15)
 
 
