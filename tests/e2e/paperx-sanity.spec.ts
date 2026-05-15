@@ -1150,7 +1150,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
     }
   });
 
-  test('Toolbar action reflects active vs paused on the icon (v0.14.3)', async () => {
+  test('Toolbar icon stays default; state surfaces via tooltip (v0.14.4)', async () => {
     const ctx = await launchWithExtension();
     try {
       const fixture = ctx.pages()[0] ?? (await ctx.newPage());
@@ -1170,13 +1170,12 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
       });
       expect(tabId).not.toBeNull();
 
-      // v0.14.3: the count moved off the native badge into a
-      // self-composited icon (chrome.action.setIcon) so we can center
-      // the glyph ourselves. The native badge must therefore stay
-      // EMPTY in every state. Pixel-level centering of the composited
-      // glyph is a manual-verify item (headless can't assert the
-      // rasterized icon). Title is the regression guard that the
-      // active/paused state still propagates.
+      // v0.14.4: paperx no longer touches the toolbar icon — the
+      // v0.14.1-3 badge/composited-chip decorations were removed for
+      // reading poorly. The native badge therefore stays EMPTY in
+      // every state (we never call setBadgeText). State now surfaces
+      // only via the hover title; these title assertions guard that
+      // the active/paused signal still propagates end-to-end.
       await expect
         .poll(
           () =>
