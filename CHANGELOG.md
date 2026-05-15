@@ -1,3 +1,9 @@
+## [0.14.4](https://github.com/z3phr0/paperx/compare/v0.14.3...v0.14.4) (2026-05-15)
+
+
+### Reverts
+
+* **background:** drop the composited toolbar icon badge ([492ee0e](https://github.com/z3phr0/paperx/commit/492ee0e5a18c9ac0726800cf5dd0048e341a85a2))
 ## [0.14.3](https://github.com/z3phr0/paperx/compare/v0.14.2...v0.14.3) (2026-05-15)
 
 
