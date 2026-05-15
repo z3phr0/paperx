@@ -1150,7 +1150,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
     }
   });
 
-  test('Toolbar action reflects active vs paused on the icon (v0.14.1)', async () => {
+  test('Toolbar action reflects active vs paused on the icon (v0.14.2)', async () => {
     const ctx = await launchWithExtension();
     try {
       const fixture = ctx.pages()[0] ?? (await ctx.newPage());
@@ -1170,7 +1170,8 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
       });
       expect(tabId).not.toBeNull();
 
-      // Active with no edits yet → dot badge + "active" title.
+      // Active, no edits yet → numeric "0" badge on the light-green
+      // chip (#86EFAC = [134,239,172,255]) + "active" title.
       await expect
         .poll(
           () =>
@@ -1180,7 +1181,15 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
             ),
           { timeout: 5_000 },
         )
-        .toBe('●');
+        .toBe('0');
+      await expect
+        .poll(() =>
+          worker.evaluate(
+            (id) => chrome.action.getBadgeBackgroundColor({ tabId: id! }),
+            tabId,
+          ),
+        )
+        .toEqual([134, 239, 172, 255]);
       await expect
         .poll(() =>
           worker.evaluate(
@@ -1190,7 +1199,7 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
         )
         .toContain('active');
 
-      // Disable → empty badge + "paused" title.
+      // Disable → pause glyph badge on neutral gray + "paused" title.
       await worker.evaluate(async (id) => {
         const fn = (globalThis as Record<string, unknown>)[
           '__paperxSetTabEnabled'
@@ -1209,7 +1218,15 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
             ),
           { timeout: 5_000 },
         )
-        .toBe('');
+        .toBe('‖');
+      await expect
+        .poll(() =>
+          worker.evaluate(
+            (id) => chrome.action.getBadgeBackgroundColor({ tabId: id! }),
+            tabId,
+          ),
+        )
+        .toEqual([107, 114, 128, 255]);
       await expect
         .poll(() =>
           worker.evaluate(
