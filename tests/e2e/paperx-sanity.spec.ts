@@ -1149,6 +1149,79 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
       await ctx.close();
     }
   });
+
+  test('Toolbar action reflects active vs paused on the icon (v0.14.1)', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const fixture = ctx.pages()[0] ?? (await ctx.newPage());
+      await fixture.goto(FIXTURE_URL);
+      await enablePaperxOnPage(ctx, fixture);
+      await expect(
+        fixture.locator('[data-testid="paperx-toolbar"]'),
+      ).toBeVisible({ timeout: 5_000 });
+
+      const worker = await getServiceWorker(ctx);
+      const tabId = await worker.evaluate(async () => {
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        return tab?.id ?? null;
+      });
+      expect(tabId).not.toBeNull();
+
+      // Active with no edits yet → dot badge + "active" title.
+      await expect
+        .poll(
+          () =>
+            worker.evaluate(
+              (id) => chrome.action.getBadgeText({ tabId: id! }),
+              tabId,
+            ),
+          { timeout: 5_000 },
+        )
+        .toBe('●');
+      await expect
+        .poll(() =>
+          worker.evaluate(
+            (id) => chrome.action.getTitle({ tabId: id! }),
+            tabId,
+          ),
+        )
+        .toContain('active');
+
+      // Disable → empty badge + "paused" title.
+      await worker.evaluate(async (id) => {
+        const fn = (globalThis as Record<string, unknown>)[
+          '__paperxSetTabEnabled'
+        ];
+        await (fn as (id: number, value: boolean) => Promise<void>)(
+          id!,
+          false,
+        );
+      }, tabId);
+      await expect
+        .poll(
+          () =>
+            worker.evaluate(
+              (id) => chrome.action.getBadgeText({ tabId: id! }),
+              tabId,
+            ),
+          { timeout: 5_000 },
+        )
+        .toBe('');
+      await expect
+        .poll(() =>
+          worker.evaluate(
+            (id) => chrome.action.getTitle({ tabId: id! }),
+            tabId,
+          ),
+        )
+        .toContain('paused');
+    } finally {
+      await ctx.close();
+    }
+  });
 });
 
 /**
