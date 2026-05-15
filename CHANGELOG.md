@@ -1,3 +1,14 @@
+## [0.13.2](https://github.com/z3phr0/paperx/compare/v0.13.1...v0.13.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **comments:** drop translucent halo ring on annotation box + white pin keyline ([1b818a8](https://github.com/z3phr0/paperx/commit/1b818a83e84db81bf3eb328deec206acdcac1ad0))
+
+
+### Features
+
+* **comments:** solid priority/resolved badges + elevated item card per v0.13 design ([0f039ac](https://github.com/z3phr0/paperx/commit/0f039ac32cae8a4cbf8cf91173e129ce5191d004))
 ## [0.13.1](https://github.com/z3phr0/paperx/compare/v0.13.0...v0.13.1) (2026-05-14)
 
 
