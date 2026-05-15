@@ -36,26 +36,64 @@ const SESSION_KEY_PREFIX = 'paperx_tab_';
 const keyFor = (tabId: number): string => `${SESSION_KEY_PREFIX}${tabId}`;
 
 const BADGE_COLOR = '#D09A06';
+// U+25CF BLACK CIRCLE — the "active, no edits yet" indicator. Without
+// it an active-but-idle tab is visually identical to a paused tab on
+// the toolbar (the v0.14.0 gap this patch closes).
+const ACTIVE_DOT = '●';
+
+function actionTitle(enabled: boolean, count: number): string {
+  if (!enabled) return 'PaperX — paused on this tab';
+  if (count > 0) {
+    return `PaperX — active · ${count} ${count === 1 ? 'change' : 'changes'}`;
+  }
+  return 'PaperX — active on this tab';
+}
+
+function actionBadge(enabled: boolean, count: number): string {
+  if (!enabled) return '';
+  return count > 0 ? String(count) : ACTIVE_DOT;
+}
+
+async function readCount(tabId: number): Promise<number> {
+  try {
+    const k = countKeyFor(tabId);
+    const r = await chrome.storage.session.get(k);
+    const n = r[k];
+    return typeof n === 'number' && Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
 
 /**
- * Cache the tab's ChangeLog count in session (popup reads it direct),
- * paint the toolbar action badge, and rebroadcast so an open popup
- * mirrors it live. Every chrome.* call is best-effort — a closed tab
- * or asleep SW must not throw.
+ * Single writer for the toolbar action's per-tab visual state. Renders
+ * (enabled, count) into the badge + tooltip so paused / active-idle /
+ * active-with-changes are all distinguishable on the toolbar icon
+ * itself — MV3 can't restyle the raster icon, so badge + title are the
+ * state channel. Still caches the count in session + rebroadcasts so
+ * an open popup mirrors live. Every chrome.* call is best-effort: a
+ * closed tab or dormant SW must never throw.
  */
-async function applyCount(tabId: number, count: number): Promise<void> {
+async function applyActionState(
+  tabId: number,
+  enabled: boolean,
+  count: number,
+): Promise<void> {
   try {
     await chrome.storage.session.set({ [countKeyFor(tabId)]: count });
   } catch (err) {
     console.warn('[paperx/bg] count session.set failed', err);
   }
-  const text = count > 0 ? String(count) : '';
-  chrome.action.setBadgeText({ tabId, text }).catch(() => {});
-  if (count > 0) {
+  const badge = actionBadge(enabled, count);
+  chrome.action.setBadgeText({ tabId, text: badge }).catch(() => {});
+  if (badge) {
     chrome.action
       .setBadgeBackgroundColor({ tabId, color: BADGE_COLOR })
       .catch(() => {});
   }
+  chrome.action
+    .setTitle({ tabId, title: actionTitle(enabled, count) })
+    .catch(() => {});
   chrome.tabs
     .sendMessage(tabId, {
       type: PAPERX_COUNT_CHANGED,
@@ -88,10 +126,14 @@ async function setTabEnabled(tabId: number, value: boolean): Promise<void> {
       enabled: value,
     } satisfies PaperxMessage)
     .catch(() => {});
-  // Disabling the tab tears the content script down, so its count is
-  // now meaningless — clear the badge + cache immediately rather than
-  // waiting for the (never-arriving) reportCount(0) from a dead frame.
-  if (!value) void applyCount(tabId, 0);
+  // Always repaint the action so the toolbar reflects the new state:
+  //   - disabled → empty badge + "paused" title (count forced to 0;
+  //     the content script is torn down so its last count is stale)
+  //   - enabled  → ● badge + "active" title (count starts at 0; the
+  //     content script's reaction fireImmediately re-reports the real
+  //     count a beat later and re-renders the number)
+  const count = value ? await readCount(tabId) : 0;
+  void applyActionState(tabId, value, count);
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -129,7 +171,13 @@ chrome.runtime.onMessage.addListener(
     }
     if (msg?.type === PAPERX_REPORT_COUNT) {
       const tabId = sender.tab?.id;
-      if (tabId != null) void applyCount(tabId, msg.count);
+      if (tabId != null) {
+        // Gate the count on current enabled state — a REPORT racing a
+        // just-disabled tab must not flash a number onto a paused icon.
+        void getTabEnabled(tabId).then((enabled) =>
+          applyActionState(tabId, enabled, msg.count),
+        );
+      }
       // Fire-and-forget — the content script doesn't await a response.
       return;
     }
