@@ -160,22 +160,20 @@ const PriBadge: React.FC<{
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 4,
-        height: 18,
-        padding: '0 6px',
-        borderRadius: 9,
-        border: `1px solid ${c.fg}`,
-        background: c.soft,
-        color: c.fg,
-        fontSize: 9.5,
+        padding: '2px 7px',
+        borderRadius: 4,
+        border: `1px solid ${c.dot}`,
+        background: c.dot,
+        color: '#fff',
+        fontSize: 9,
         fontWeight: 700,
         letterSpacing: '0.02em',
+        fontFamily: 'JetBrains Mono, monospace',
+        boxShadow:
+          '0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+        textShadow: '0 1px 1px rgba(0,0,0,0.25)',
       }}
     >
-      <span
-        aria-hidden
-        style={{ width: 5, height: 5, borderRadius: '50%', background: c.dot }}
-      />
       {priority}
     </span>
   );
@@ -302,9 +300,13 @@ const CommentListItem: React.FC<CommentListItemProps> = ({
       data-testid={`paperx-comment-item-${comment.id}`}
       style={{
         padding: 10,
-        background: 'var(--dv-bg-input)',
-        border: '1px solid var(--dv-border)',
+        background: 'var(--dv-bg-elev)',
+        border: '1px solid var(--dv-border-strong)',
         borderRadius: 'var(--dv-r-section)',
+        boxShadow:
+          '0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(12px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(160%)',
         opacity: resolved ? 0.68 : 1,
         transition: 'opacity 200ms',
       }}
@@ -347,10 +349,13 @@ const CommentListItem: React.FC<CommentListItemProps> = ({
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: '0.04em',
-              color: '#16A34A',
+              color: '#fff',
               padding: '2px 5px',
               borderRadius: 4,
-              background: 'rgba(22,163,74,0.14)',
+              background: 'rgba(22,163,74,0.95)',
+              border: '1px solid rgba(22,163,74,1)',
+              boxShadow:
+                '0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
             }}
           >
             <Icon name="check" size={9} />
