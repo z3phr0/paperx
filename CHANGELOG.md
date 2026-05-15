@@ -1,3 +1,14 @@
+# [0.14.0](https://github.com/z3phr0/paperx/compare/v0.13.2...v0.14.0) (2026-05-15)
+
+
+### Features
+
+* **assets:** swap extension icon to v0.14 brand mark ([021e3dc](https://github.com/z3phr0/paperx/commit/021e3dcb929a2981e011c97ba35ac74238279f59))
+* **background:** action badge + count cache + count broadcast ([17a7a04](https://github.com/z3phr0/paperx/commit/17a7a047665e0e2c4494300fca662ce9aa2fe733)), closes [#D09A06](https://github.com/z3phr0/paperx/issues/D09A06)
+* **content:** report change count + apply default mode on mount ([b2c635f](https://github.com/z3phr0/paperx/commit/b2c635fea01d112f72ffb773648200909d517367))
+* **popup:** rebuild popup to v0.14 design with live state surface ([839d2f5](https://github.com/z3phr0/paperx/commit/839d2f512c82502cea5543785ae158894ffb7685)), closes [#171a1f](https://github.com/z3phr0/paperx/issues/171a1f)
+* **storage:** default-mode preference + change-count session bridge ([0eec236](https://github.com/z3phr0/paperx/commit/0eec2368f8a4d2b7d5d83ae2150b066871cc9302))
+* **types:** PAPERX_REPORT_COUNT / PAPERX_COUNT_CHANGED messages ([5f2426f](https://github.com/z3phr0/paperx/commit/5f2426f581a53a9cc2ecbb180986934e017cca6e))
 ## [0.13.2](https://github.com/z3phr0/paperx/compare/v0.13.1...v0.13.2) (2026-05-15)
 
 
