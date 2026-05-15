@@ -5,32 +5,37 @@
     <title>paperx</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
+      /* design-v2 tokens, scoped to the popup (no design-v2.css here —
+         the popup is its own HTML context). Values lifted verbatim
+         from src/shared/styles/design-v2.css so the popup reads as the
+         same brand surface as the in-page inspector. */
       :root {
         color-scheme: dark;
+        --accent: #d09a06;
+        --accent-soft: rgba(208, 154, 6, 0.14);
+        --bg-input: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f2f2f7;
+        --text-secondary: rgba(235, 235, 245, 0.72);
+        --text-muted: rgba(235, 235, 245, 0.45);
       }
       html,
       body {
         margin: 0;
         padding: 0;
-        min-width: 280px;
-        min-height: 320px;
+        width: 320px;
         font-family:
+          'Inter',
           -apple-system,
           BlinkMacSystemFont,
-          'SF Pro Display',
-          'Segoe UI',
-          Roboto,
           system-ui,
           sans-serif;
-        background:
-          radial-gradient(circle at 30% 0%, rgba(244, 63, 94, 0.18), transparent 60%),
-          radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.18), transparent 60%),
-          hsl(0 0% 9%);
-        color: hsl(0 0% 96%);
+        background: #171a1f;
+        color: var(--text);
         overflow: hidden;
       }
       #paperx-popup-root {
-        min-height: 320px;
+        width: 320px;
       }
     </style>
   </head>
