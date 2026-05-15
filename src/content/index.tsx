@@ -21,13 +21,18 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import tailwindCss from '@/shared/styles/tailwind.css?inline';
 import designV2Css from '@/shared/styles/design-v2.css?inline';
+import { reaction, type IReactionDisposer } from 'mobx';
+
 import { getContainer } from '@/shared/di/container';
 import { TYPES } from '@/shared/di/tokens';
 import { UIStore } from '@/shared/stores/UIStore';
+import type { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { PAPERX_TOGGLE, type PaperxMessage } from '@/shared/types/messages';
 import { PortalProvider } from '@/shared/ui/portal';
 import { onTabEnabledChange, requestTabEnabled } from '@/shared/storage/enabled';
+import { getDefaultMode } from '@/shared/storage/prefs';
+import { reportCount } from '@/shared/storage/changeCount';
 
 const HOST_TAG = 'paperx-root';
 
@@ -113,9 +118,18 @@ function wireMessageBridge(store: UIStore): void {
 // every tab via chrome.storage.onChanged. We tear the whole shadow root
 // down on disable so host pages render with zero paperx surface.
 let mounted: MountResult | null = null;
+let disposeCountReaction: IReactionDisposer | null = null;
 
 function unmount(): void {
   if (!mounted) return;
+  if (disposeCountReaction) {
+    disposeCountReaction();
+    disposeCountReaction = null;
+  }
+  // Zero the badge proactively. The SW also clears on disable, but a
+  // bare unmount (e.g. SPA teardown without an enabled flip) wouldn't
+  // otherwise reset it.
+  void reportCount(0);
   try {
     mounted.root.unmount();
   } catch (err) {
@@ -136,7 +150,25 @@ function startMounted(): void {
   // Start visible by default so reviewers immediately see the toolbar
   // after the global enable flip; per-tab visibility lives in UIStore.
   mounted.store.show();
+  // Apply the user's persisted default mode (popup picker → storage).
+  void getDefaultMode().then((m) => mounted?.store.setMode(m));
   wireMessageBridge(mounted.store);
+
+  // Push the ChangeLog total to the SW whenever it moves so the action
+  // badge + popup count stay live. rAF-batched so a burst of edits
+  // collapses to one message per frame; identical counts are skipped
+  // by the reaction's default equality check.
+  const container = getContainer();
+  const clui = container.get<ChangeLogUIStore>(TYPES.ChangeLogUIStore);
+  let raf = 0;
+  disposeCountReaction = reaction(
+    () => clui.totalCount,
+    (n) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => void reportCount(n));
+    },
+    { fireImmediately: true },
+  );
   console.info('[paperx/content] mounted in shadow DOM');
 }
 
