@@ -35,11 +35,17 @@ import { countKeyFor } from '@/shared/storage/changeCount';
 const SESSION_KEY_PREFIX = 'paperx_tab_';
 const keyFor = (tabId: number): string => `${SESSION_KEY_PREFIX}${tabId}`;
 
-const BADGE_COLOR = '#D09A06';
-// U+25CF BLACK CIRCLE — the "active, no edits yet" indicator. Without
-// it an active-but-idle tab is visually identical to a paused tab on
-// the toolbar (the v0.14.0 gap this patch closes).
-const ACTIVE_DOT = '●';
+// v0.14.2 badge palette. active → the tab's ChangeLog count on a
+// light-green chip (dark-green text for small-glyph contrast); paused
+// → a pause glyph on neutral gray so a disabled tab reads as "off"
+// rather than just blank.
+const ACTIVE_BG = '#86EFAC'; // Tailwind green-300 (light green)
+const ACTIVE_TEXT = '#14532D'; // dark green — high contrast on the chip
+const PAUSED_BG = '#6B7280'; // neutral gray
+const PAUSED_TEXT = '#FFFFFF';
+// U+2016 DOUBLE VERTICAL LINE — universally present in badge fonts and
+// monochrome (unlike U+23F8 ⏸ which can render as a color emoji).
+const PAUSE_GLYPH = '‖';
 
 function actionTitle(enabled: boolean, count: number): string {
   if (!enabled) return 'PaperX — paused on this tab';
@@ -50,8 +56,7 @@ function actionTitle(enabled: boolean, count: number): string {
 }
 
 function actionBadge(enabled: boolean, count: number): string {
-  if (!enabled) return '';
-  return count > 0 ? String(count) : ACTIVE_DOT;
+  return enabled ? String(count) : PAUSE_GLYPH;
 }
 
 async function readCount(tabId: number): Promise<number> {
@@ -86,11 +91,21 @@ async function applyActionState(
   }
   const badge = actionBadge(enabled, count);
   chrome.action.setBadgeText({ tabId, text: badge }).catch(() => {});
-  if (badge) {
-    chrome.action
-      .setBadgeBackgroundColor({ tabId, color: BADGE_COLOR })
-      .catch(() => {});
-  }
+  chrome.action
+    .setBadgeBackgroundColor({
+      tabId,
+      color: enabled ? ACTIVE_BG : PAUSED_BG,
+    })
+    .catch(() => {});
+  // setBadgeTextColor is Chrome 110+. Optional-chain the method itself
+  // (older typings/runtimes) and .catch the promise so an unsupported
+  // runtime degrades to the default text color rather than throwing.
+  chrome.action
+    .setBadgeTextColor?.({
+      tabId,
+      color: enabled ? ACTIVE_TEXT : PAUSED_TEXT,
+    })
+    ?.catch(() => {});
   chrome.action
     .setTitle({ tabId, title: actionTitle(enabled, count) })
     .catch(() => {});
