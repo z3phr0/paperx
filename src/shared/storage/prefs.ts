@@ -17,18 +17,29 @@ export const DEFAULT_MODE_CHOICES: ReadonlyArray<
   Extract<ToolMode, 'design' | 'ruler' | 'comment'>
 > = ['design', 'ruler', 'comment'];
 
-const FALLBACK: ToolMode = 'design';
+/** Display fallback the popup picker highlights when the user has
+ *  never explicitly chosen — NOT applied to the content script. */
+export const DEFAULT_MODE_DISPLAY: ToolMode = 'design';
 
-function coerce(v: unknown): ToolMode {
-  return DEFAULT_MODE_CHOICES.includes(v as never) ? (v as ToolMode) : FALLBACK;
+function coerce(v: unknown): ToolMode | null {
+  return DEFAULT_MODE_CHOICES.includes(v as never) ? (v as ToolMode) : null;
 }
 
-export async function getDefaultMode(): Promise<ToolMode> {
+/**
+ * The user's explicitly-chosen default mode, or `null` when unset /
+ * invalid. Null is load-bearing: the content script only overrides
+ * UIStore.mode when this is non-null, so a user who never touched the
+ * picker keeps the legacy mode=null start (toolbar visible, no panel
+ * until a mode button is clicked). Pre-applying 'design' here would
+ * make the toolbar's toggle-off semantics fight every flow that
+ * assumes a null start.
+ */
+export async function getDefaultMode(): Promise<ToolMode | null> {
   try {
     const r = await chrome.storage.local.get(DEFAULT_MODE_KEY);
     return coerce(r[DEFAULT_MODE_KEY]);
   } catch {
-    return FALLBACK;
+    return null;
   }
 }
 
@@ -51,7 +62,8 @@ export function onDefaultModeChange(cb: (mode: ToolMode) => void): () => void {
     if (area !== 'local') return;
     const c = changes[DEFAULT_MODE_KEY];
     if (c == null) return;
-    cb(coerce(c.newValue));
+    const next = coerce(c.newValue);
+    if (next != null) cb(next);
   };
   chrome.storage.onChanged.addListener(handler);
   return () => chrome.storage.onChanged.removeListener(handler);

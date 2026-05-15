@@ -31,6 +31,7 @@ import {
 import { onCountChange, readCountFromSession } from '@/shared/storage/changeCount';
 import {
   DEFAULT_MODE_CHOICES,
+  DEFAULT_MODE_DISPLAY,
   getDefaultMode,
   setDefaultMode,
 } from '@/shared/storage/prefs';
@@ -74,13 +75,16 @@ function App(): React.ReactElement {
   const [count, setCount] = React.useState(0);
   const [tabId, setTabId] = React.useState<number | null>(null);
   const [site, setSite] = React.useState('—');
-  const [mode, setMode] = React.useState<ToolMode>('design');
+  // Display default highlights 'design' until the user explicitly
+  // picks; that pick persists and the content script starts to honor
+  // it. Until then the content script keeps its legacy null-mode start.
+  const [mode, setMode] = React.useState<ToolMode>(DEFAULT_MODE_DISPLAY);
 
   React.useEffect(() => {
     void (async () => {
       const tab = await getActiveTab();
       const dm = await getDefaultMode();
-      setMode(dm);
+      if (dm != null) setMode(dm);
       if (tab == null) return;
       setTabId(tab.id);
       setSite(prettySite(tab.url));

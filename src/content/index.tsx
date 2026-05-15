@@ -150,8 +150,13 @@ function startMounted(): void {
   // Start visible by default so reviewers immediately see the toolbar
   // after the global enable flip; per-tab visibility lives in UIStore.
   mounted.store.show();
-  // Apply the user's persisted default mode (popup picker → storage).
-  void getDefaultMode().then((m) => mounted?.store.setMode(m));
+  // Apply the user's persisted default mode ONLY if they explicitly
+  // picked one. null = never chosen → keep the legacy mode=null start
+  // so the toolbar's toggle-off semantics don't fight flows that
+  // assume no mode is pre-selected.
+  void getDefaultMode().then((m) => {
+    if (m != null) mounted?.store.setMode(m);
+  });
   wireMessageBridge(mounted.store);
 
   // Push the ChangeLog total to the SW whenever it moves so the action

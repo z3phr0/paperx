@@ -1048,7 +1048,7 @@ test.describe('paperx Comment fix (v0.2.2)', () => {
  * Default is OFF for every newly opened tab.
  */
 test.describe('paperx popup (v0.7.0 per-tab)', () => {
-  test('Popup loads with OFF state on a fresh tab and the big toggle flips it', async () => {
+  test('Popup loads paused on a fresh tab and the master switch flips it', async () => {
     const ctx = await launchWithExtension();
     try {
       const sw = await getServiceWorker(ctx);
@@ -1060,17 +1060,58 @@ test.describe('paperx popup (v0.7.0 per-tab)', () => {
       const popup = await ctx.newPage();
       await popup.goto(`chrome-extension://${extId}/src/popup/index.html`);
 
+      // v0.14: the toggle is a pill switch (no ON/OFF text). State is read
+      // off aria-pressed; the human-readable state lives in the status line.
       const toggle = popup.locator('[data-testid="paperx-popup-toggle"]');
+      const status = popup.locator('[data-testid="paperx-popup-status"]');
       await expect(toggle).toBeVisible({ timeout: 5_000 });
-      await expect(toggle).toHaveText('OFF');
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await expect(status).toContainText('Paused');
 
-      // Toggle ON via the big button — SW updates state for the popup tab.
+      // Flip ON via the switch — SW updates state for the popup tab.
       await toggle.click();
-      await expect(toggle).toHaveText('ON', { timeout: 5_000 });
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true', {
+        timeout: 5_000,
+      });
+      await expect(status).toContainText('Active');
 
-      // Toggle OFF again — round-trip.
+      // Flip OFF again — round-trip.
       await toggle.click();
-      await expect(toggle).toHaveText('OFF', { timeout: 5_000 });
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false', {
+        timeout: 5_000,
+      });
+      await expect(status).toContainText('Paused');
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  test('Popup default-mode picker persists the selection', async () => {
+    const ctx = await launchWithExtension();
+    try {
+      const sw = await getServiceWorker(ctx);
+      const extId = new URL(sw.url()).host;
+
+      const popup = await ctx.newPage();
+      await popup.goto(`chrome-extension://${extId}/src/popup/index.html`);
+
+      const design = popup.locator('[data-testid="paperx-popup-mode-design"]');
+      const comment = popup.locator('[data-testid="paperx-popup-mode-comment"]');
+      await expect(design).toBeVisible({ timeout: 5_000 });
+      // Default is design.
+      await expect(design).toHaveAttribute('aria-pressed', 'true');
+
+      await comment.click();
+      await expect(comment).toHaveAttribute('aria-pressed', 'true');
+      await expect(design).toHaveAttribute('aria-pressed', 'false');
+
+      // Re-open the popup — the picked mode survives via
+      // chrome.storage.local.
+      const popup2 = await ctx.newPage();
+      await popup2.goto(`chrome-extension://${extId}/src/popup/index.html`);
+      await expect(
+        popup2.locator('[data-testid="paperx-popup-mode-comment"]'),
+      ).toHaveAttribute('aria-pressed', 'true', { timeout: 5_000 });
     } finally {
       await ctx.close();
     }
