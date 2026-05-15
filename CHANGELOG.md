@@ -1,3 +1,9 @@
+## [0.14.2](https://github.com/z3phr0/paperx/compare/v0.14.1...v0.14.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **background:** light-green active badge + pause glyph (v0.14.2) ([5c62b06](https://github.com/z3phr0/paperx/commit/5c62b06eb29a9547f6c50c41e61e17072e917b1f)), closes [#86EFAC](https://github.com/z3phr0/paperx/issues/86EFAC) [#14532D](https://github.com/z3phr0/paperx/issues/14532D) [#6B7280](https://github.com/z3phr0/paperx/issues/6B7280)
 ## [0.14.1](https://github.com/z3phr0/paperx/compare/v0.14.0...v0.14.1) (2026-05-15)
 
 
