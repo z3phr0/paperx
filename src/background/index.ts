@@ -55,8 +55,62 @@ function actionTitle(enabled: boolean, count: number): string {
   return 'PaperX — active on this tab';
 }
 
-function actionBadge(enabled: boolean, count: number): string {
-  return enabled ? String(count) : PAUSE_GLYPH;
+// v0.14.3: Chrome renders the native `setBadgeText` badge itself with
+// no alignment/position control — single-glyph counts read optically
+// off-center. The only way to pixel-place the count on the toolbar
+// icon is to composite the icon ourselves and feed it to setIcon. The
+// SW decodes the brand icon once, then per (enabled,count) draws a
+// bottom-right chip with the label perfectly centered.
+const ICON_SIZES = [16, 32, 48] as const;
+
+let baseBitmapPromise: Promise<ImageBitmap> | null = null;
+function loadBaseIcon(): Promise<ImageBitmap> {
+  if (!baseBitmapPromise) {
+    baseBitmapPromise = fetch(chrome.runtime.getURL('src/assets/icon.png'))
+      .then((r) => r.blob())
+      .then((b) => createImageBitmap(b));
+  }
+  return baseBitmapPromise;
+}
+
+async function composeIcon(
+  enabled: boolean,
+  count: number,
+): Promise<Record<number, ImageData>> {
+  const base = await loadBaseIcon();
+  const label = enabled ? String(count) : PAUSE_GLYPH;
+  const chipBg = enabled ? ACTIVE_BG : PAUSED_BG;
+  const chipFg = enabled ? ACTIVE_TEXT : PAUSED_TEXT;
+  const out: Record<number, ImageData> = {};
+  for (const s of ICON_SIZES) {
+    const cv = new OffscreenCanvas(s, s);
+    const ctx = cv.getContext('2d');
+    if (!ctx) continue;
+    ctx.clearRect(0, 0, s, s);
+    ctx.drawImage(base, 0, 0, s, s);
+    // Chip hugs the bottom-right corner.
+    const d = Math.round(s * 0.62);
+    const inset = Math.round(s * 0.04);
+    const cx = s - d / 2 - inset;
+    const cy = s - d / 2 - inset;
+    ctx.beginPath();
+    ctx.arc(cx, cy, d / 2, 0, Math.PI * 2);
+    ctx.fillStyle = chipBg;
+    ctx.fill();
+    // 16px is too small for legible text — color chip only conveys
+    // the state there; 32/48 carry the centered glyph.
+    if (s >= 32) {
+      ctx.fillStyle = chipFg;
+      ctx.font = `700 ${Math.round(d * 0.62)}px -apple-system, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Tiny optical nudge — middle baseline + a hair down reads as
+      // truly centered for digits at this size.
+      ctx.fillText(label, cx, cy + Math.round(s * 0.02));
+    }
+    out[s] = ctx.getImageData(0, 0, s, s);
+  }
+  return out;
 }
 
 async function readCount(tabId: number): Promise<number> {
@@ -89,23 +143,17 @@ async function applyActionState(
   } catch (err) {
     console.warn('[paperx/bg] count session.set failed', err);
   }
-  const badge = actionBadge(enabled, count);
-  chrome.action.setBadgeText({ tabId, text: badge }).catch(() => {});
-  chrome.action
-    .setBadgeBackgroundColor({
-      tabId,
-      color: enabled ? ACTIVE_BG : PAUSED_BG,
-    })
-    .catch(() => {});
-  // setBadgeTextColor is Chrome 110+. Optional-chain the method itself
-  // (older typings/runtimes) and .catch the promise so an unsupported
-  // runtime degrades to the default text color rather than throwing.
-  chrome.action
-    .setBadgeTextColor?.({
-      tabId,
-      color: enabled ? ACTIVE_TEXT : PAUSED_TEXT,
-    })
-    ?.catch(() => {});
+  // Clear any stale native badge — the count now lives in the
+  // composited icon, a doubled-up badge would be noise.
+  chrome.action.setBadgeText({ tabId, text: '' }).catch(() => {});
+  // Composite + apply the icon. On any failure (fetch / OffscreenCanvas
+  // unsupported) we keep whatever icon was last set and still surface
+  // state through the title — never throw.
+  void composeIcon(enabled, count)
+    .then((imageData) => chrome.action.setIcon({ tabId, imageData }))
+    .catch((err) =>
+      console.warn('[paperx/bg] setIcon compose failed', err),
+    );
   chrome.action
     .setTitle({ tabId, title: actionTitle(enabled, count) })
     .catch(() => {});
