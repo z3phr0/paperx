@@ -29,7 +29,7 @@ import { UIStore } from '@/shared/stores/UIStore';
 import { SelectionStore } from '@/shared/stores/SelectionStore';
 import { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
 import type { IStyleEditService } from '@/shared/services/StyleEditService';
-import { TOOL_MODES, TOOL_MODE_LABELS, type ToolMode } from '@/shared/types/modes';
+import { VISIBLE_TOOL_MODES, TOOL_MODE_LABELS, type ToolMode } from '@/shared/types/modes';
 import { getContainer } from '@/shared/di/container';
 import { TYPES } from '@/shared/di/tokens';
 
@@ -166,7 +166,7 @@ const ToolbarPill = observer(({ store, changeLogUIStore }: ToolbarPillProps) => 
       >
         <GripVertical className="h-4 w-4" />
       </div>
-      {TOOL_MODES.map((m) => {
+      {VISIBLE_TOOL_MODES.map((m) => {
         const Icon = MODE_ICONS[m];
         const active = store.mode === m;
         return (

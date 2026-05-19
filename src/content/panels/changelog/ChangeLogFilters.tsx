@@ -13,11 +13,11 @@ import { Input } from '@/shared/ui/Input';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Button } from '@/shared/ui/button';
 import type { ChangeLogUIStore } from '@/shared/stores/ChangeLogUIStore';
-import { TOOL_MODES, TOOL_MODE_LABELS, type ToolMode } from '@/shared/types/modes';
+import { VISIBLE_TOOL_MODES, TOOL_MODE_LABELS, type ToolMode } from '@/shared/types/modes';
 
 const MODE_OPTIONS: SelectOption[] = [
   { value: '', label: 'All modes' },
-  ...TOOL_MODES.map((m) => ({ value: m, label: TOOL_MODE_LABELS[m] })),
+  ...VISIBLE_TOOL_MODES.map((m) => ({ value: m, label: TOOL_MODE_LABELS[m] })),
 ];
 
 export interface ChangeLogFiltersProps {

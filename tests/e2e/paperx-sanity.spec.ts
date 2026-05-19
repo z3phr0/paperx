@@ -109,10 +109,14 @@ test.describe('paperx sanity (Sprint 3 / S3-A)', () => {
       const toolbar = page.locator('[data-testid="paperx-toolbar"]');
       await expect(toolbar).toBeVisible();
 
-      // 4 mode buttons
-      for (const m of ['design', 'ruler', 'comment', 'transition'] as const) {
+      // 3 visible mode buttons (transition hidden in v0.14.5)
+      for (const m of ['design', 'ruler', 'comment'] as const) {
         await expect(page.locator(`[data-testid="paperx-mode-${m}"]`)).toBeVisible();
       }
+      // TEMP (v0.14.5): transition entry hidden — guard it stays gone.
+      await expect(
+        page.locator('[data-testid="paperx-mode-transition"]'),
+      ).toHaveCount(0);
 
       await expect(page.locator('[data-testid="paperx-history"]')).toBeVisible();
       await expect(page.locator('[data-testid="paperx-close"]')).toBeVisible();
@@ -621,7 +625,9 @@ test.describe('paperx Sprint 2 (B + C)', () => {
  * built on the BezierEditor and GradientEditor primitives.
  */
 test.describe('paperx Sprint 3 (F + G)', () => {
-  test('Transition: mode opens panel + bezier preset writes cubic-bezier', async () => {
+  // TEMP (v0.14.5): transition 入口暂隐（floatbar 按钮 + ChangeLog 筛选项），
+  // 恢复时清空 modes.ts 的 HIDDEN_TOOL_MODES 并取消下面的 .skip。
+  test.skip('Transition: mode opens panel + bezier preset writes cubic-bezier', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
@@ -773,7 +779,8 @@ test.describe('paperx Sprint 3 (F + G)', () => {
     }
   });
 
-  test('JSON Prompt: summary.modes includes "transition" after a transition edit', async () => {
+  // TEMP (v0.14.5): transition 入口暂隐，恢复时取消 skip（见 HIDDEN_TOOL_MODES）。
+  test.skip('JSON Prompt: summary.modes includes "transition" after a transition edit', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
@@ -1403,7 +1410,8 @@ test.describe('paperx measurement guides (v0.8.0 / v0.10.0)', () => {
     }
   });
 
-  test('Guides do not render in transition mode', async () => {
+  // TEMP (v0.14.5): transition 入口暂隐，恢复时取消 skip（见 HIDDEN_TOOL_MODES）。
+  test.skip('Guides do not render in transition mode', async () => {
     const ctx = await launchWithExtension();
     try {
       const page = await openFixture(ctx);
