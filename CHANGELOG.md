@@ -1,3 +1,9 @@
+## [0.14.5](https://github.com/z3phr0/paperx/compare/v0.14.4...v0.14.5) (2026-05-19)
+
+
+### Reverts
+
+* **toolbar:** temporarily hide transition mode button + changelog filter chip ([93d7ad0](https://github.com/z3phr0/paperx/commit/93d7ad008c3be31f9ea87959f2711e55952dbf7b))
 ## [0.14.4](https://github.com/z3phr0/paperx/compare/v0.14.3...v0.14.4) (2026-05-15)
 
 
