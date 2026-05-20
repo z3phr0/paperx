@@ -1,3 +1,9 @@
+## [0.14.6](https://github.com/z3phr0/paperx/compare/v0.14.5...v0.14.6) (2026-05-20)
+
+
+### Features
+
+* **repo:** split into bun monorepo (apps/paperx + apps/paperx-cli) ([bc2ed20](https://github.com/z3phr0/paperx/commit/bc2ed20eccc82fe2a053bdc830efde6496058cfc))
 ## [0.14.5](https://github.com/z3phr0/paperx/compare/v0.14.4...v0.14.5) (2026-05-19)
 
 
