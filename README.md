@@ -11,7 +11,8 @@
    ▼                                                                    │
 [ paperx 工具栏 ] ──→ [ change-log ] ──→ [ JSON Prompt ] ──→ [ Claude Code ]
    │                                                                    │
-   └─ 4 模式：design / ruler / comment / layout                         │
+   └─ 模式：design / ruler / comment / transition                       │
+   │   （v0.14.5 起 transition 入口隐藏，HIDDEN_TOOL_MODES）             │
    └─ 4 view：层级 / 代码 / CSS / Tailwind                              │
                                                                         ▼
                                                              AI 定位 React 组件
@@ -88,6 +89,16 @@ bun run dev
 
 Vite + CRXJS 会启动 dev server 并把 manifest 输出到 `apps/paperx/dist/`，content script 改动支持热更（popup/options 改动免重启加载）。
 
+### 跑 paperx-cli（Mirror skeleton）
+
+```bash
+bun run cli               # → "paperx-cli: hello from the Mirror skeleton 👋"
+bun run cli -- --help     # 占位 usage
+bun run cli -- --version  # paperx-cli 0.0.1
+```
+
+业务下一期。这一期只保证 monorepo 结构端到端跑通。
+
 ### 加载扩展到 Chrome
 
 1. 打开 `chrome://extensions`
@@ -97,9 +108,9 @@ Vite + CRXJS 会启动 dev server 并把 manifest 输出到 `apps/paperx/dist/`�
 5. 打开任意网页（例如 `https://example.com`）
 6. 点击 Chrome 工具栏里的 paperx 图标，或按快捷键 `Cmd+Shift+P`（macOS）/ `Ctrl+Shift+P`（Win/Linux）
 
-页面右上角会出现圆角悬浮工具栏，4 个模式图标按钮（design/ruler/comment/layout）+ 一个关闭按钮。点击模式按钮可切换激活态（MobX 状态生效）；按关闭或再次按快捷键可隐藏工具栏。
+页面右上角会出现圆角悬浮工具栏，3 个模式图标按钮（design/ruler/comment）+ history + 关闭按钮。点击模式按钮可切换激活态（MobX 状态生效）；按关闭或再次按快捷键可隐藏工具栏。`transition` 模式自 v0.14.5 起 UI 入口隐藏（清空 `apps/paperx/src/shared/types/modes.ts` 的 `HIDDEN_TOOL_MODES` 即可恢复）。
 
-> Phase 1 状态：仅做到工具栏 UI 注入 + 模式切换。具体的"改样式 / 导出 JSON Prompt"功能在 Phase 2 完成。
+> 当前里程碑 v0.14.6（Mirror sprint）：bun monorepo 落定，apps/paperx 含 design / ruler / comment 三模式 + ChangeLog drawer + JSON Prompt v1 导出 + e2e 守护；apps/paperx-cli 仅骨架。
 
 ## 架构决策
 

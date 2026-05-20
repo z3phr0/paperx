@@ -52,11 +52,23 @@ Before running `bun run release ...`:
 
 - Bumps `apps/paperx/package.json.version` (patch / minor / major /
   explicit `X.Y.Z`)
-- Runs `conventional-changelog -p angular` to (re)write
-  `CHANGELOG.md` in place. First run uses `-r 0` to backfill all
-  history from the init commit.
+- Runs `bunx conventional-changelog-cli -p angular -i CHANGELOG.md -s
+  -k apps/paperx/package.json` to (re)write the root `CHANGELOG.md`
+  in place. Three monorepo-specific bits matter here:
+  - The package name is `conventional-changelog-**cli**`, not the
+    bare `conventional-changelog` lib — the lib doesn't bundle the
+    angular preset, so a fresh `bunx` install of just the lib will
+    error out with "Unable to load the 'angular' preset".
+  - `-k apps/paperx/package.json` points the tool at the extension
+    package — without it, conventional-changelog reads cwd's (root)
+    `package.json` which has no `version` field in our monorepo
+    layout, producing a malformed `# []` (empty version) header.
+  - First run uses `-r 0` to backfill all history from the init
+    commit.
 - Runs `bun run typecheck && bun run build` — non-zero aborts the
-  release.
+  release. Both root scripts forward through Bun `--filter`:
+  typecheck fans out to `'./apps/*'` (every workspace), build runs
+  only against `paperx` (the released artifact).
 - `git add apps/paperx/package.json CHANGELOG.md` + commits as
   `chore(release): vX.Y.Z`. **Tag is NOT created here** — it lands on
   `dev` after the ff-merge so tag and release commit live on the
@@ -94,6 +106,18 @@ or new properties are MINOR.
   section): edit `CHANGELOG.md` by hand, `git add`, and amend the
   release commit (`git commit --amend --no-edit`) before merging to
   `dev`. After the tag is pushed, treat the CHANGELOG as immutable.
+- **CHANGELOG header shows empty `# []` instead of `## [X.Y.Z]`**:
+  conventional-changelog can't find the new version. Confirm
+  `scripts/release.ts` passes `-k apps/paperx/package.json` and that
+  the bump landed there (not in the root pkg). If you're still local
+  and haven't pushed the tag, the clean recovery is `git reset --hard`
+  back to the feat commit, fix the script, and re-run
+  `bun run release patch`. See the Mirror-sprint commit `bc2ed20`
+  for the exact fix shape.
+- **`bunx conventional-changelog -p angular` fails with "Unable to
+  load the 'angular' preset"**: you're invoking the lib package by
+  mistake. The release script must call `conventional-changelog-cli`
+  (the CLI package bundles the preset as a dep); the bare lib doesn't.
 - **Forgot to bump version manually before commits** with conventional
   commits in them: that's fine. `bun run release minor` will pick up
   every commit since the last release section in `CHANGELOG.md`.
