@@ -2,21 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Repo layout (bun monorepo, Mirror sprint)
+
+Two workspaces under `apps/`:
+
+- `apps/paperx/` — the MV3 browser extension (everything that used to live at repo root: `src/`, `tests/`, `manifest.json`, `vite.config.ts`, `tailwind.config.ts`, `postcss.config.js`, `playwright.config.ts`, `tsconfig.json`, `tsconfig.node.json`, `package.json`). All `src/...` paths in this doc are now inside `apps/paperx/`.
+- `apps/paperx-cli/` — Mirror-sprint skeleton (`src/index.ts` prints hello, `package.json` version `0.0.1`, not released). Business logic deferred.
+
+Shared infra at root: `tsconfig.base.json` (extended by both packages), root `package.json` with `workspaces: ["apps/*", "packages/*"]` and `--filter`-forwarding scripts, `scripts/release.ts` (bumps `apps/paperx/package.json` — extension is the released artifact; root has no `version`), `CHANGELOG.md`, `docs/`. `packages/` is reserved for future shared libs and is currently empty.
+
+Root scripts forward via Bun's filter: `bun run build` → `bun --filter paperx run build`, `bun run typecheck` → all packages, `bun run cli` → `bun --filter paperx-cli run start`. You can also `cd apps/paperx && bun run <script>` directly.
+
 ## Commands
 
 ```bash
 bun install                  # bun 1.3+ required
 bun run typecheck            # tsc --noEmit (strict)
-bun run build                # vite build → dist/  (MV3 unpacked extension)
+bun run build                # vite build → apps/paperx/dist/  (MV3 unpacked extension)
 bun run dev                  # vite + CRXJS HMR (content-script edits hot-reload)
 bun run test:e2e             # Playwright sanity (real headed Chromium)
 bun run test:e2e -- --grep <substr>   # run a single test by title substring
 bunx playwright install chromium      # one-time, Playwright's own Chromium
 ```
 
-`test:e2e` always loads from `dist/`. **Run `bun run build` whenever source changes** — the e2e harness does not auto-rebuild. macOS / desktop Linux only (MV3 needs headed Chromium).
+`test:e2e` always loads from `apps/paperx/dist/`. **Run `bun run build` whenever source changes** — the e2e harness does not auto-rebuild. macOS / desktop Linux only (MV3 needs headed Chromium).
 
-Loading the extension manually: `chrome://extensions` → Developer mode → Load unpacked → pick `dist/`.
+Loading the extension manually: `chrome://extensions` → Developer mode → Load unpacked → pick `apps/paperx/dist/`.
 
 ## Architecture (the parts you need to understand before changing anything)
 
@@ -57,9 +68,9 @@ The user's project tooling injects `data-uid="<stable-id>"` on host-page DOM ele
 - **`data-testid` for stable e2e selectors.** Toolbar / mode buttons / history / close / panels / submit buttons all carry `data-testid="paperx-..."`. Add a testid when you add a button or panel that the e2e suite needs to reach. Button components forward `data-*` via `{...props}`.
 - **Conventional Commits** (`feat:` / `fix:` / `chore:` / `refactor:` / `test:` / `docs:`). Multi-commit PRs are preferred over one giant commit; keep each commit typecheck-clean so `git bisect` works.
 - **Branch policy (pre-MVP):** `dev` is the **integration** branch — never commit directly to it. All work happens on `feature/<short-name>` branches cut from `dev`. After the work is done, run the release flow (below), then ff-merge the feature back into `dev`. `main` is the stable line; it stays untouched until an MVP cut.
-- **Release flow.** Work on `feature/<name>`. When the feature is complete and tests are green, run `bun run release patch|minor|major|x.y.z` on the feature branch — the script bumps `package.json.version`, regenerates `CHANGELOG.md`, runs typecheck + build, and emits a `chore(release): vX.Y.Z` commit. Then `git checkout dev && git merge --ff-only feature/<name> && git tag -a vX.Y.Z -m 'Release vX.Y.Z'`. Push only when the user explicitly asks. Direct edits-on-dev or commit-without-release are both 3.25 violations — close the loop properly.
+- **Release flow.** Work on `feature/<name>`. When the feature is complete and tests are green, run `bun run release patch|minor|major|x.y.z` on the feature branch — the script bumps `apps/paperx/package.json.version` (extension is the released artifact; root `package.json` is private and unversioned), regenerates root `CHANGELOG.md`, runs typecheck + build, and emits a `chore(release): vX.Y.Z` commit. Then `git checkout dev && git merge --ff-only feature/<name> && git tag -a vX.Y.Z -m 'Release vX.Y.Z'`. Push only when the user explicitly asks. Direct edits-on-dev or commit-without-release are both 3.25 violations — close the loop properly.
 - **Don't add new top-level deps casually.** Check whether the existing primitives (`Button`, `Card`, `Input`, `Label`, `Select`) cover the case before reaching for a new Radix package. If you do add one (e.g. another overlay component), pre-install the dep in a single `chore(deps):` commit before the feature commit so parallel agents don't race on `package.json`.
-- **No mocks in e2e.** Tests load the real built extension into real Chromium and read the real clipboard. Adding a test means it must pass against `dist/`.
+- **No mocks in e2e.** Tests load the real built extension into real Chromium and read the real clipboard. Adding a test means it must pass against `apps/paperx/dist/`.
 - **Don't reintroduce a babel plugin or a Fiber fallback for source-side data injection.** This was explicitly cut: paperx reads `data-uid` and that's it. Source-side tooling is the user project's responsibility.
 
 ## Common gotchas observed from prior sprints

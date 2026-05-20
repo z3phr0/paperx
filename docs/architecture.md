@@ -137,48 +137,48 @@ paperx **不参与** 标签注入。源码工程方（用户的 React/Vue/Svelte
 2. 不行就 fork 一份精简版进 `tools/vis-bug/`
 3. 通过自定义事件 `paperx:change` 在 visBug 与 ChangeLogService 之间通信
 
-## 3. 整体目录结构
+## 3. 整体目录结构（bun monorepo，Mirror sprint v0.14.6）
 
 ```
-paperx/
-├── manifest.json                    # MV3 manifest, action+command+content_scripts
-├── package.json                     # bun-managed
-├── tsconfig.json                    # strict + decorators (Inversify) + jsx
-├── vite.config.ts                   # @crxjs/vite-plugin entry
-├── tailwind.config.ts               # preflight: false（关键）
-├── postcss.config.js
-├── src/
-│   ├── background/
-│   │   └── index.ts                 # service worker: action onClicked → PAPERX_TOGGLE
-│   ├── content/
-│   │   ├── index.tsx                # Shadow DOM bootstrap + React mount
-│   │   └── FloatingToolbar.tsx      # 顶部悬浮工具栏（4 模式 + 关闭）
-│   ├── popup/                       # （Phase 2 才用）
-│   ├── shared/
-│   │   ├── di/
-│   │   │   ├── container.ts         # Inversify Container 单例
-│   │   │   └── tokens.ts            # Symbol-based DI tokens
-│   │   ├── stores/
-│   │   │   └── UIStore.ts           # MobX: visible / mode / toggle / setMode
-│   │   ├── services/
-│   │   │   └── ChangeLogService.ts  # observable 变更记录（Phase 2 接 export）
-│   │   ├── types/
-│   │   │   ├── modes.ts             # ToolMode 联合 + 标签
-│   │   │   └── messages.ts          # 跨上下文消息 discriminated union
-│   │   ├── ui/
-│   │   │   ├── utils.ts             # cn() = clsx + tailwind-merge
-│   │   │   └── button.tsx           # shadcn-style Button (cva)
-│   │   └── styles/
-│   │       ├── tokens.css           # HSL 设计变量
-│   │       ├── preflight.css        # :host scoped reset
-│   │       └── tailwind.css         # @tailwind components/utilities
-│   └── assets/
-│       └── icon.png                 # 1x1 占位（Phase 2 换正式 icon）
-├── tools/
-│   └── babel-plugin-paperx-uid/     # R2 编译期注入 stub
-│       ├── index.js
-│       ├── package.json
-│       └── README.md
+paperx/                              # workspace root, private, no version
+├── package.json                     # workspaces: ["apps/*", "packages/*"]
+├── tsconfig.base.json               # shared compilerOptions（strict 等）
+├── CHANGELOG.md                     # release history（跨包）
+├── scripts/release.ts               # 改 apps/paperx/package.json
+├── apps/
+│   ├── paperx/                      # 浏览器插件（发布物）
+│   │   ├── manifest.json            # MV3 manifest, action+command+content_scripts
+│   │   ├── package.json             # name: "paperx", versioned
+│   │   ├── tsconfig.json            # extends ../../tsconfig.base.json
+│   │   ├── vite.config.ts           # @crxjs/vite-plugin entry
+│   │   ├── tailwind.config.ts       # preflight: false（关键）
+│   │   ├── postcss.config.js
+│   │   ├── playwright.config.ts
+│   │   ├── tests/e2e/               # Playwright sanity（real headed Chromium）
+│   │   └── src/
+│   │       ├── background/
+│   │       │   └── index.ts         # service worker: action onClicked → PAPERX_TOGGLE
+│   │       ├── content/
+│   │       │   ├── index.tsx        # Shadow DOM bootstrap + React mount
+│   │       │   ├── FloatingToolbar.tsx
+│   │       │   ├── panels/          # design / ruler / comment / transition
+│   │       │   └── overlays/        # guides / picker / rulers …
+│   │       ├── popup/
+│   │       ├── shared/
+│   │       │   ├── di/              # Inversify Container + Symbol tokens
+│   │       │   ├── stores/          # MobX：UIStore / Selection / ChangeLog / Comment / Snap
+│   │       │   ├── services/        # StyleEditService（唯一 inline-style writer）
+│   │       │   ├── types/           # ToolMode / changes / prompt schemas
+│   │       │   ├── ui/              # cn() + shadcn-style primitives
+│   │       │   └── styles/          # tokens / preflight / tailwind 入口
+│   │       └── assets/
+│   │           └── icon.png
+│   └── paperx-cli/                  # Mirror skeleton（业务下一期）
+│       ├── package.json             # name: "paperx-cli", v0.0.1, private
+│       ├── tsconfig.json            # extends ../../tsconfig.base.json
+│       └── src/
+│           └── index.ts             # hello / --help / --version
+├── packages/                        # 预留 shared lib（当前空）
 └── docs/
     └── architecture.md              # 本文件
 ```
@@ -247,7 +247,7 @@ bun run build       # vite build, exit 0
 然后：
 1. 打开 Chrome → `chrome://extensions`
 2. 右上角打开"开发者模式"
-3. "加载已解压的扩展程序"，选择仓库下的 `dist/` 目录
+3. "加载已解压的扩展程序"，选择仓库下的 `apps/paperx/dist/` 目录
 4. 打开任意网页（如 https://example.com）
 5. 点击工具栏的 paperx 图标，或按 `Cmd+Shift+P`（macOS）/ `Ctrl+Shift+P`（Win/Linux）
 6. 应在右上角看到圆角悬浮工具栏，4 个模式按钮 + 一个关闭按钮

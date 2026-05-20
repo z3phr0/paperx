@@ -33,24 +33,28 @@
 | 图标 | lucide-react |
 | 扩展形态 | Chrome Manifest V3 |
 
-## 目录结构
+## 目录结构（bun monorepo，Mirror sprint）
 
 ```
-paperx/
-├── manifest.json                    # MV3 manifest
-├── src/
-│   ├── background/index.ts          # service worker（toggle bridge）
-│   ├── content/
-│   │   ├── index.tsx                # Shadow DOM 启动 + React 挂载
-│   │   └── FloatingToolbar.tsx      # 悬浮工具栏（4 模式）
-│   └── shared/
-│       ├── di/                      # Inversify Container + tokens
-│       ├── stores/UIStore.ts        # MobX：visible / mode
-│       ├── services/                # ChangeLogService（Phase 2 接 export）
-│       ├── ui/                      # cn() helper + shadcn-style Button
-│       ├── styles/                  # tokens / 进 shadow root 的 reset / tailwind 入口
-│       └── types/                   # ToolMode、跨上下文消息
-├── tools/babel-plugin-paperx-uid/   # R2 编译期注入 stub（Phase 2 完成）
+paperx/                              # workspace root, private, no version
+├── package.json                     # workspaces: ["apps/*", "packages/*"]
+├── tsconfig.base.json               # shared compilerOptions
+├── CHANGELOG.md                     # release history (cross-package)
+├── scripts/release.ts               # bumps apps/paperx/package.json
+├── apps/
+│   ├── paperx/                      # 浏览器插件（发布物）
+│   │   ├── manifest.json            # MV3 manifest
+│   │   ├── package.json             # name: "paperx", versioned
+│   │   ├── vite.config.ts           # @crxjs/vite-plugin entry
+│   │   ├── src/
+│   │   │   ├── background/index.ts  # service worker（toggle bridge）
+│   │   │   ├── content/             # Shadow DOM 启动 + 悬浮工具栏
+│   │   │   └── shared/              # di / stores / services / ui / styles / types
+│   │   └── tests/e2e/               # Playwright sanity
+│   └── paperx-cli/                  # Mirror skeleton（业务下一期）
+│       ├── package.json             # name: "paperx-cli", v0.0.1
+│       └── src/index.ts             # hello / --help / --version
+├── packages/                        # 预留 shared lib（当前空）
 └── docs/architecture.md             # 三大架构决策 + Phase 路线
 ```
 
@@ -74,7 +78,7 @@ bun run typecheck   # tsc --noEmit
 bun run build
 ```
 
-产出在 `dist/`。
+产出在 `apps/paperx/dist/`。
 
 ### 开发模式（HMR）
 
@@ -82,14 +86,14 @@ bun run build
 bun run dev
 ```
 
-Vite + CRXJS 会启动 dev server 并把 manifest 输出到 `dist/`，content script 改动支持热更（popup/options 改动免重启加载）。
+Vite + CRXJS 会启动 dev server 并把 manifest 输出到 `apps/paperx/dist/`，content script 改动支持热更（popup/options 改动免重启加载）。
 
 ### 加载扩展到 Chrome
 
 1. 打开 `chrome://extensions`
 2. 右上角开启 **开发者模式 (Developer mode)**
 3. 点击 **加载已解压的扩展程序 (Load unpacked)**
-4. 选择仓库下的 `dist/` 目录
+4. 选择仓库下的 `apps/paperx/dist/` 目录
 5. 打开任意网页（例如 `https://example.com`）
 6. 点击 Chrome 工具栏里的 paperx 图标，或按快捷键 `Cmd+Shift+P`（macOS）/ `Ctrl+Shift+P`（Win/Linux）
 
@@ -108,10 +112,10 @@ Vite + CRXJS 会启动 dev server 并把 manifest 输出到 `dist/`，content sc
 ## 验收脚本（CI 友好）
 
 ```bash
-bun install && bun run typecheck && bun run build && ls dist/manifest.json
+bun install && bun run typecheck && bun run build && ls apps/paperx/dist/manifest.json
 ```
 
-退出码 0 + `dist/manifest.json` 存在 = 构建链路 OK。
+退出码 0 + `apps/paperx/dist/manifest.json` 存在 = 构建链路 OK。
 
 ## License
 

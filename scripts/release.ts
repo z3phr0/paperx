@@ -19,7 +19,11 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const ROOT = process.cwd();
-const PKG_PATH = join(ROOT, 'package.json');
+// Bun monorepo: the extension (apps/paperx) is the released artifact;
+// the root package.json is the private workspace manifest with no
+// version field. CHANGELOG.md stays at the repo root for cross-package
+// release history.
+const PKG_PATH = join(ROOT, 'apps/paperx/package.json');
 const CHANGELOG_PATH = join(ROOT, 'CHANGELOG.md');
 
 function bump(current: string, kind: string): string {
@@ -66,7 +70,26 @@ function main(): void {
   // last release section). We hand the flag manually rather than
   // through the package.json script so the behavior stays explicit.
   const isFirst = !existsSync(CHANGELOG_PATH);
-  const cgArgs = ['conventional-changelog', '-p', 'angular', '-i', 'CHANGELOG.md', '-s'];
+  // Use the CLI package name (`conventional-changelog-cli`) explicitly:
+  // it bundles the angular preset as a dep, whereas the bare
+  // `conventional-changelog` library package does not. The exposed
+  // binary is still named `conventional-changelog`, but bunx resolves
+  // by the package name we pass.
+  // `-k apps/paperx/package.json` tells conventional-changelog where
+  // to read the bumped version from — without it the angular preset
+  // would scan the cwd's package.json (the private workspace root,
+  // which has no version field) and emit a CHANGELOG section with an
+  // empty version header.
+  const cgArgs = [
+    'conventional-changelog-cli',
+    '-p',
+    'angular',
+    '-i',
+    'CHANGELOG.md',
+    '-s',
+    '-k',
+    'apps/paperx/package.json',
+  ];
   if (isFirst) cgArgs.push('-r', '0');
   run('bunx', cgArgs);
 
@@ -74,7 +97,7 @@ function main(): void {
   run('bun', ['run', 'typecheck']);
   run('bun', ['run', 'build']);
 
-  run('git', ['add', 'package.json', 'CHANGELOG.md']);
+  run('git', ['add', 'apps/paperx/package.json', 'CHANGELOG.md']);
   run('git', ['commit', '-m', `chore(release): v${next}`]);
 
   const branch = currentBranch();

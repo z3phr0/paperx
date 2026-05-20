@@ -1,9 +1,11 @@
 # Releasing paperx
 
 paperx ships a Conventional Commits → automated CHANGELOG flow, with
-`package.json.version` as the single source of truth. The MV3
-manifest and runtime `meta.paperxVersion` are both injected at build
-time by `vite.config.ts` — don't hand-edit them.
+`apps/paperx/package.json.version` as the single source of truth
+(extension is the released artifact in the bun monorepo; root
+`package.json` is private and unversioned). The MV3 manifest and
+runtime `meta.paperxVersion` are both injected at build time by
+`apps/paperx/vite.config.ts` — don't hand-edit them.
 
 ## Quick path (95% of releases)
 
@@ -13,9 +15,11 @@ time by `vite.config.ts` — don't hand-edit them.
    bun run release minor   # or patch / major / explicit x.y.z
    ```
 
-   This bumps `package.json.version`, regenerates `CHANGELOG.md` from
-   new commits, runs `typecheck + build` (must be clean), and creates
-   one `chore(release): vX.Y.Z` commit on the current branch.
+   This bumps `apps/paperx/package.json.version`, regenerates root
+   `CHANGELOG.md` from new commits, runs `typecheck + build` (both
+   forwarded to the paperx workspace via Bun `--filter`; must be
+   clean), and creates one `chore(release): vX.Y.Z` commit on the
+   current branch.
 
 2. Move it to the working trunk and tag:
 
@@ -39,21 +43,21 @@ Before running `bun run release ...`:
 - [ ] All commits on the branch follow Conventional Commits
   (`type(scope): subject`). Mixed-style commits won't classify
   correctly into Added / Changed / Fixed / etc.
-- [ ] `bun run test:e2e` passes against the latest `dist/`
+- [ ] `bun run test:e2e` passes against the latest `apps/paperx/dist/`
 - [ ] `feature/<branch>` is rebased onto current `dev` so the merge
   is fast-forward (linear history; no merge commits)
 - [ ] No uncommitted changes (`git status` clean)
 
 ## What `scripts/release.ts` does
 
-- Bumps `package.json.version` (patch / minor / major / explicit
-  `X.Y.Z`)
+- Bumps `apps/paperx/package.json.version` (patch / minor / major /
+  explicit `X.Y.Z`)
 - Runs `conventional-changelog -p angular` to (re)write
   `CHANGELOG.md` in place. First run uses `-r 0` to backfill all
   history from the init commit.
 - Runs `bun run typecheck && bun run build` — non-zero aborts the
   release.
-- `git add package.json CHANGELOG.md` + commits as
+- `git add apps/paperx/package.json CHANGELOG.md` + commits as
   `chore(release): vX.Y.Z`. **Tag is NOT created here** — it lands on
   `dev` after the ff-merge so tag and release commit live on the
   same branch.
@@ -62,8 +66,8 @@ Before running `bun run release ...`:
 
 | Where the version surfaces | How it's set |
 |---|---|
-| `package.json.version` | Manual edit (or `scripts/release.ts`) |
-| `dist/manifest.json` `version` | `vite.config.ts` spreads `pkg.version` over the imported manifest |
+| `apps/paperx/package.json.version` | Manual edit (or `scripts/release.ts`) |
+| `apps/paperx/dist/manifest.json` `version` | `apps/paperx/vite.config.ts` spreads `pkg.version` over the imported manifest |
 | `meta.paperxVersion` in JSON Prompt export | `__PAPERX_VERSION__` Vite `define`, inlined at compile time |
 
 `manifest.json` itself **does not** carry a `version` field anymore

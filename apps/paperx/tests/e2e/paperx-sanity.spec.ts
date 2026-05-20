@@ -27,8 +27,8 @@ import { test, expect, chromium, type BrowserContext, type Page } from '@playwri
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const REPO_ROOT = path.resolve(__dirname, '../..');
-const EXTENSION_PATH = path.resolve(REPO_ROOT, 'dist');
+const PACKAGE_ROOT = path.resolve(__dirname, '../..');
+const EXTENSION_PATH = path.resolve(PACKAGE_ROOT, 'dist');
 const FIXTURE_PATH = path.resolve(__dirname, 'fixtures/sample.html');
 const FIXTURE_URL = `file://${FIXTURE_PATH}`;
 

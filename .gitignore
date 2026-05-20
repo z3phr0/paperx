@@ -1,15 +1,17 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+**/node_modules
 /.pnp
 .pnp.js
 
-# build output
-/dist
-/.vite
-/build
-/coverage
+# build output (monorepo: any package's dist/)
+**/dist
+**/.vite
+**/build
+**/coverage
+# Chrome Web Store submission artifact (regenerable)
+dist.zip
 
 # misc
 .DS_Store
@@ -33,9 +35,9 @@ bun-debug.log*
 !.vscode/extensions.json
 .idea
 
-# Playwright e2e (S3-A)
-/playwright-report
-/test-results
+# Playwright e2e (S3-A) — globbed for monorepo
+**/playwright-report
+**/test-results
 
 # Claude Code local harness
 /.claude
